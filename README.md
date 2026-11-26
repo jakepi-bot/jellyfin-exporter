@@ -4,9 +4,35 @@ A Jellyfin plugin that exports movies, shows and seasons to a directory you cont
 Jellyfin's own FFmpeg (hardware acceleration when the server has it) and named export profiles
 that choose codec, resolution and audio channels.
 
-**Status: 0.1.0.1 scaffold.** The plugin installs, registers its configuration page and exposes
-the shared export models. The export engine, settings UI, browse UI and status dashboard land in
-follow-up changes on top of this skeleton.
+**Status: 0.2.0.0.** The plugin installs, ships a working export-profile editor in the dashboard
+settings, validates profile names and output directories server-side, and persists profiles
+across restarts. The export engine, browse UI and status dashboard land in follow-up changes on
+top of this skeleton.
+
+## Export profiles
+
+Open **Dashboard > Plugins > Jellyfin Exporter** to manage profiles. A profile is a named
+preset:
+
+| Field | Values |
+| --- | --- |
+| Name | Free text, unique, 1-64 characters |
+| Format | H.264 / AVC, H.265 / HEVC, AV1 |
+| Resolution | 4K (3840x2160), 1080p, 720p, 480p |
+| Audio channels | Original (copy), 5.1 (AAC), Stereo (AAC) |
+| Output directory | Absolute path on the server, e.g. `/mnt/media/exports` |
+| Enabled | Disabled profiles stay configured but cannot queue new exports |
+
+One profile is marked **default** (the radio in the Default column). The default cannot be
+deleted until another profile is made default. Global settings cover the maximum number of
+concurrent exports (1-8) and the completion/failure notifications.
+
+Validation happens twice: the page checks names and path shape inline, then asks the server to
+probe the directory (`POST /JellyfinExporter/Profiles/Validate` and
+`POST /JellyfinExporter/Profiles/ProbeDirectory`). A profile is rejected unless its output
+directory is absolute, is a directory (or creatable) and accepts a probe file, because the export
+would otherwise fail after encoding. `POST /Plugins/{id}/Configuration` runs the same checks
+again, so the API cannot store a profile the exporter could not use.
 
 ## Requirements
 
@@ -40,6 +66,7 @@ restart. The zip contains `Jellyfin.Plugin.Exporter.dll`, `meta.json` and `plugi
 ```bash
 export PATH="$HOME/.dotnet:$PATH"    # .NET 10 SDK
 dotnet build -c Release
+dotnet test -c Release               # configuration round-trip + validation rules
 python3 scripts/package.py           # artifacts/jellyfin-exporter_<version>.zip
 ```
 
@@ -94,15 +121,19 @@ Directory.Build.props                     version + pinned Jellyfin package vers
 manifest.json                             plugin repository manifest (served to Jellyfin)
 src/Jellyfin.Plugin.Exporter/
   Plugin.cs                               BasePlugin<PluginConfiguration> + IHasWebPages
+  Api/ExporterProfilesController.cs       profile validation endpoints for the settings page
   Configuration/PluginConfiguration.cs    persisted settings
+  Configuration/PluginConfigurationValidator.cs  save-time rules (names, default, limits)
+  Configuration/OutputDirectoryInspector.cs      "is this directory writable?" probe
   Models/                                 shared domain models (see below)
-  Services/                               IExportQueue contract
-  Web/configPage.html                     embedded settings page
+  Services/                               IExportQueue contract + DI registrator
+  Web/configPage.html                     embedded settings page (profile editor)
   meta.json, plugin.xml                   install metadata stamped into the zip
+tests/Jellyfin.Plugin.Exporter.Tests/     xunit tests: XML/JSON round-trip + validation rules
 scripts/package.py                        build the installable zip
 scripts/update_manifest.py                maintain manifest.json
 scripts/verify-install.sh                 install + assert against a stock Jellyfin container
-.github/workflows/build.yml               build + package on every push
+.github/workflows/build.yml               build + test + package on every push
 .github/workflows/release.yml             publish zip + manifest on tag
 ```
 

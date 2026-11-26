@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Jellyfin.Plugin.Exporter/Jellyfin.Plugin.Exporter.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Jellyfin.Plugin.Exporter.Tests/Jellyfin.Plugin.Exporter.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -18,7 +18,7 @@ NAME="${NAME:-jellyfin-exporter-verify}"
 WORK="${WORK:-/tmp/jellyfin-exporter-verify}"
 PLUGIN_NAME="Jellyfin Exporter"
 PLUGIN_GUID="b0473c79-36c1-4386-9006-f941031bbea2"
-VERSION="${PLUGIN_VERSION:-0.1.0.1}"
+VERSION="${PLUGIN_VERSION:-0.2.0.0}"
 API="http://127.0.0.1:${PORT}"
 DEVICE_ID="$(python3 -c 'import uuid;print(uuid.uuid4())')"
 # Jellyfin 12.x rejects an empty admin password in the startup wizard.
@@ -172,4 +172,184 @@ sleep 3
 curl -fsS "${API}/Plugins/${PLUGIN_GUID}/Configuration" -H "$HDR" |
   python3 -c 'import json,sys; c=json.load(sys.stdin); assert c["MaxConcurrentExports"]==3, c; print("persisted config:", json.dumps(c))'
 
-say "PASS: ${PLUGIN_NAME} ${VERSION} installed from ${REPO_URL}, loaded, and persisted configuration"
+say "checking the settings page ships the profile editor"
+for marker in 'jfx-profiles-table' 'JellyfinExporter/Profiles/Validate' \
+    'Movies/{Movie Title} ({Year})' 'Season {NN}'; do
+  if ! grep -qF "$marker" "${WORK}/configPage.html"; then
+    echo "FAIL: settings page is missing ${marker}" >&2
+    exit 1
+  fi
+done
+
+# The configuration JSON has been PascalCase and camelCase across Jellyfin
+# releases, so every assertion reads keys case-insensitively.
+NORMALIZE='
+import json, sys
+
+def get(obj, name):
+    if obj is None:
+        return None
+    for key, value in obj.items():
+        if key.lower() == name.lower():
+            return value
+    return None
+'
+
+say "rejecting an invalid output directory"
+RELATIVE_BODY="$(python3 - <<'PY'
+import json
+print(json.dumps({
+    "Profiles": [{
+        "Id": "11111111-1111-1111-1111-111111111111",
+        "Name": "Relative",
+        "Format": "H264",
+        "Resolution": "Resolution1080p",
+        "AudioChannels": "Original",
+        "OutputDirectory": "exports/movies",
+        "Enabled": True
+    }],
+    "DefaultProfileId": None,
+    "MaxConcurrentExports": 1
+}))
+PY
+)"
+CODE="$(curl -sS -o "${WORK}/relative-response.json" -w '%{http_code}' \
+  -X POST "${API}/Plugins/${PLUGIN_GUID}/Configuration" -H "$HDR" \
+  -H 'Content-Type: application/json' -d "$RELATIVE_BODY")"
+if [ "${CODE}" -lt 400 ]; then
+  echo "FAIL: a relative output directory was accepted (HTTP ${CODE})" >&2
+  exit 1
+fi
+curl -fsS "${API}/Plugins/${PLUGIN_GUID}/Configuration" -H "$HDR" >"${WORK}/config-unchanged.json"
+python3 - "${WORK}/config-unchanged.json" <<PY
+${NORMALIZE}
+config = json.load(open(sys.argv[1]))
+assert not get(config, "Profiles"), config
+print("config unchanged:", json.dumps(config))
+PY
+
+say "checking the profile validation endpoint"
+PROBE_CODE="$(curl -sS -o "${WORK}/probe.json" -w '%{http_code}' \
+  -X POST "${API}/JellyfinExporter/Profiles/ProbeDirectory" -H "$HDR" \
+  -H 'Content-Type: application/json' -d '{"path":"relative/path"}')"
+test "${PROBE_CODE}" = "200"
+python3 - "${WORK}/probe.json" <<PY
+${NORMALIZE}
+result = json.load(open(sys.argv[1]))
+assert get(result, "Valid") is False, result
+assert get(result, "Message"), result
+print("relative path rejected:", get(result, "Message"))
+PY
+curl -fsS -o "${WORK}/probe-tmp.json" -X POST "${API}/JellyfinExporter/Profiles/ProbeDirectory" -H "$HDR" \
+  -H 'Content-Type: application/json' -d '{"Path":"/tmp"}'
+python3 - "${WORK}/probe-tmp.json" <<PY
+${NORMALIZE}
+assert get(json.load(open(sys.argv[1])), "Valid") is True
+PY
+
+say "creating two export profiles and a default"
+python3 - "${WORK}/profiles.json" <<'PY'
+import json, sys, uuid
+json.dump({
+    "Profiles": [
+        {
+            "Id": str(uuid.uuid4()),
+            "Name": "Archive 1080p",
+            "Format": "H265",
+            "Resolution": "Resolution1080p",
+            "AudioChannels": "Original",
+            "OutputDirectory": "/tmp/exports-archive",
+            "Enabled": True
+        },
+        {
+            "Id": str(uuid.uuid4()),
+            "Name": "Phone copy",
+            "Format": "AV1",
+            "Resolution": "Resolution720p",
+            "AudioChannels": "Stereo",
+            "OutputDirectory": "/tmp/exports-phone",
+            "Enabled": True
+        }
+    ],
+    "DefaultProfileId": None,
+    "MaxConcurrentExports": 2,
+    "NotifyOnCompletion": True,
+    "NotifyOnFailure": False
+}, open(sys.argv[1], "w"))
+PY
+python3 - "${WORK}/profiles.json" <<'PY'
+import json, sys
+config = json.load(open(sys.argv[1]))
+config["DefaultProfileId"] = config["Profiles"][1]["Id"]
+json.dump(config, open(sys.argv[1], "w"))
+PY
+curl -fsS -o /dev/null -X POST "${API}/Plugins/${PLUGIN_GUID}/Configuration" -H "$HDR" \
+  -H 'Content-Type: application/json' -d @"${WORK}/profiles.json"
+
+say "restarting Jellyfin and checking the profiles persisted"
+docker restart "$NAME" >/dev/null
+for _ in $(seq 1 90); do
+  if curl -fsS -m 2 "${API}/System/Info/Public" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+done
+sleep 3
+curl -fsS "${API}/Plugins/${PLUGIN_GUID}/Configuration" -H "$HDR" >"${WORK}/profiles-after-restart.json"
+python3 - "${WORK}/profiles-after-restart.json" "${WORK}/profiles.json" <<PY
+${NORMALIZE}
+config = json.load(open(sys.argv[1]))
+expected = json.load(open(sys.argv[2]))
+profiles = get(config, "Profiles")
+assert profiles and len(profiles) == 2, config
+archive, phone = profiles
+assert get(archive, "Name") == "Archive 1080p", archive
+assert get(archive, "Format") == "H265", archive
+assert get(archive, "Resolution") == "Resolution1080p", archive
+assert get(archive, "AudioChannels") == "Original", archive
+assert get(archive, "OutputDirectory") == "/tmp/exports-archive", archive
+assert get(phone, "Name") == "Phone copy", phone
+assert get(phone, "Format") == "AV1", phone
+assert get(phone, "AudioChannels") == "Stereo", phone
+assert get(config, "DefaultProfileId").replace("-", "") == expected["DefaultProfileId"].replace("-", ""), config
+assert get(config, "MaxConcurrentExports") == 2, config
+assert get(config, "NotifyOnCompletion") is True, config
+assert get(config, "NotifyOnFailure") is False, config
+print("profiles persisted:", json.dumps(profiles))
+PY
+
+say "editing one profile and deleting the other"
+python3 - "${WORK}/profiles.json" "${WORK}/profiles-edited.json" <<'PY'
+import json, sys
+config = json.load(open(sys.argv[1]))
+profile = config["Profiles"][0]
+profile["Name"] = "Archive 2160p"
+profile["Resolution"] = "Resolution4K"
+config["Profiles"] = [profile]
+config["DefaultProfileId"] = profile["Id"]
+json.dump(config, open(sys.argv[2], "w"))
+PY
+curl -fsS -o /dev/null -X POST "${API}/Plugins/${PLUGIN_GUID}/Configuration" -H "$HDR" \
+  -H 'Content-Type: application/json' -d @"${WORK}/profiles-edited.json"
+docker restart "$NAME" >/dev/null
+for _ in $(seq 1 90); do
+  if curl -fsS -m 2 "${API}/System/Info/Public" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+done
+sleep 3
+curl -fsS "${API}/Plugins/${PLUGIN_GUID}/Configuration" -H "$HDR" >"${WORK}/profiles-edited-after-restart.json"
+python3 - "${WORK}/profiles-edited-after-restart.json" <<PY
+${NORMALIZE}
+config = json.load(open(sys.argv[1]))
+profiles = get(config, "Profiles")
+assert profiles and len(profiles) == 1, config
+profile = profiles[0]
+assert get(profile, "Name") == "Archive 2160p", profile
+assert get(profile, "Resolution") == "Resolution4K", profile
+assert get(config, "DefaultProfileId") == get(profile, "Id"), config
+print("edited profile persisted:", json.dumps(profile))
+PY
+
+say "PASS: ${PLUGIN_NAME} ${VERSION} installed from ${REPO_URL}, loaded, and the profile settings model round-trips"

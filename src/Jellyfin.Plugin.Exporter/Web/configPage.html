@@ -5,66 +5,1204 @@
     <title>Jellyfin Exporter</title>
 </head>
 <body>
-    <div id="JellyfinExporterConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button">
+    <div id="JellyfinExporterConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+         data-require="emby-input,emby-button,emby-select,emby-checkbox">
         <div data-role="content">
             <div class="content-primary">
-                <div class="sectionTitleContainer flex align-items-center">
-                    <h1 class="sectionTitle">Jellyfin Exporter</h1>
+                <style>
+                    #JellyfinExporterConfigPage .jfx-errors {
+                        border-left: 4px solid #cc3333;
+                        background: rgba(204, 51, 51, 0.12);
+                        padding: 0.75em 1em;
+                        margin: 0 0 1em 0;
+                        border-radius: 2px;
+                    }
+
+                    #JellyfinExporterConfigPage .jfx-errors ul {
+                        margin: 0.25em 0 0 1.25em;
+                    }
+
+                    #JellyfinExporterConfigPage .jfx-field-error {
+                        color: #cc3333;
+                        font-size: 0.9em;
+                        margin-top: 0.2em;
+                    }
+
+                    #JellyfinExporterConfigPage .jfx-field-error:empty {
+                        display: none;
+                    }
+
+                    #JellyfinExporterConfigPage .jfx-ok {
+                        color: #2e7d32;
+                        font-size: 0.9em;
+                        margin-top: 0.2em;
+                    }
+
+                    #JellyfinExporterConfigPage .jfx-ok:empty {
+                        display: none;
+                    }
+
+                    #JellyfinExporterConfigPage .jfx-dirty {
+                        color: #b26a00;
+                        font-weight: 600;
+                    }
+
+                    /* The dashboard no longer styles table.defaultTable, so the
+                       profile table carries its own neutral theme-agnostic rules. */
+                    #JellyfinExporterConfigPage table.jfx-profiles {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 0.5em 0 1em;
+                    }
+
+                    #JellyfinExporterConfigPage table.jfx-profiles th,
+                    #JellyfinExporterConfigPage table.jfx-profiles td {
+                        vertical-align: middle;
+                        text-align: left;
+                        padding: 0.6em 0.75em;
+                        border-bottom: 1px solid rgba(128, 128, 128, 0.35);
+                    }
+
+                    #JellyfinExporterConfigPage table.jfx-profiles th {
+                        font-size: 0.8em;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                        opacity: 0.75;
+                    }
+
+                    #JellyfinExporterConfigPage table.jfx-profiles th:first-child,
+                    #JellyfinExporterConfigPage table.jfx-profiles td:first-child {
+                        padding-left: 0;
+                    }
+
+                    #JellyfinExporterConfigPage table.jfx-profiles th:last-child,
+                    #JellyfinExporterConfigPage table.jfx-profiles td:last-child {
+                        padding-right: 0;
+                        text-align: right;
+                    }
+
+                    #JellyfinExporterConfigPage table.jfx-profiles tbody tr:hover {
+                        background: rgba(128, 128, 128, 0.08);
+                    }
+
+                    #JellyfinExporterConfigPage table.jfx-profiles input[type=radio] {
+                        margin: 0;
+                        accent-color: #52b54b;
+                    }
+
+                    #JellyfinExporterConfigPage table.jfx-profiles th:nth-child(6),
+                    #JellyfinExporterConfigPage table.jfx-profiles td:nth-child(6) {
+                        text-align: center;
+                    }
+
+                    #JellyfinExporterConfigPage .jfx-dir {
+                        word-break: break-all;
+                        font-family: monospace;
+                        font-size: 0.9em;
+                    }
+
+                    #JellyfinExporterConfigPage .jfx-badge {
+                        display: inline-block;
+                        padding: 0 0.4em;
+                        border-radius: 3px;
+                        background: rgba(82, 181, 75, 0.2);
+                        color: #52b54b;
+                        font-size: 0.8em;
+                        text-transform: uppercase;
+                        letter-spacing: 0.03em;
+                    }
+
+                    #JellyfinExporterConfigPage .jfx-actions {
+                        white-space: nowrap;
+                    }
+
+                    #JellyfinExporterConfigPage .jfx-layout {
+                        font-family: monospace;
+                        font-size: 0.9em;
+                        white-space: pre-wrap;
+                        margin: 0.35em 0;
+                    }
+
+                    #JellyfinExporterConfigPage .jfx-savebar {
+                        display: flex;
+                        flex-wrap: wrap;
+                        align-items: center;
+                        gap: 1em;
+                        margin-top: 1.5em;
+                    }
+                </style>
+
+                <div class="verticalSection">
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h1 class="sectionTitle">Jellyfin Exporter</h1>
+                    </div>
+                    <p class="fieldDescription">
+                        Export profiles pick the codec, resolution, audio handling and destination folder for an
+                        export. A profile is chosen when items are queued from the Exporter page.
+                    </p>
                 </div>
-                <p>
-                    Placeholder settings page. Export profiles (codec, resolution, audio channels and
-                    output directory) are added by the settings-model task; this page proves the
-                    plugin installs, registers its configuration page and round-trips configuration.
-                </p>
-                <form id="JellyfinExporterConfigForm">
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="MaxConcurrentExports">Max concurrent exports</label>
-                        <input id="MaxConcurrentExports" name="MaxConcurrentExports" type="number" min="1" max="8" is="emby-input" />
-                        <div class="fieldDescription">How many FFmpeg exports may run at the same time.</div>
-                    </div>
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="ProfilesSummary">Configured profiles</label>
-                        <input id="ProfilesSummary" type="text" is="emby-input" readonly />
-                        <div class="fieldDescription">Profiles are managed in the export profile section.</div>
-                    </div>
-                    <div>
-                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
-                            <span>Save</span>
+
+                <div class="verticalSection">
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle">Export profiles</h2>
+                        <button is="emby-button" type="button" id="jfx-add-profile"
+                                class="raised button-submit emby-button">
+                            <span>Add profile</span>
                         </button>
                     </div>
-                </form>
+
+                    <div id="jfx-config-errors" class="jfx-errors" hidden></div>
+
+                    <p id="jfx-no-profiles" class="fieldDescription" hidden>
+                        No export profiles are configured yet. Add one to make exporting available.
+                    </p>
+
+                    <table class="defaultTable jfx-profiles" id="jfx-profiles-table" hidden>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Format</th>
+                                <th>Resolution</th>
+                                <th>Audio</th>
+                                <th>Output directory</th>
+                                <th>Default</th>
+                                <th class="jfx-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jfx-profiles-body"></tbody>
+                    </table>
+
+                    <div class="fieldDescription">
+                        Files are written into each profile's output directory following this layout:
+                        <div class="jfx-layout">&lt;OutputDirectory&gt;/Movies/{Movie Title} ({Year})/{Movie Title} ({Year}).{ext}
+&lt;OutputDirectory&gt;/TV/{Show Name}/Season {NN}/{NN} - {Episode Name}.{ext}</div>
+                        <code>{NN}</code> is the zero-padded season or episode number (01, 02, ...). Names come from
+                        Jellyfin metadata; characters that are not allowed in file names are replaced and duplicate
+                        file names are de-duplicated so nothing overwrites an earlier export.
+                    </div>
+                </div>
+
+                <div class="verticalSection" id="jfx-editor" hidden>
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle" id="jfx-editor-title">New profile</h2>
+                    </div>
+                    <form id="jfx-profile-form" autocomplete="off">
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="jfx-name">Profile name</label>
+                            <input is="emby-input" type="text" id="jfx-name" maxlength="64" required
+                                   placeholder="e.g. Archive 1080p" />
+                            <div class="fieldDescription">Shown in the export page's profile picker. Must be unique.</div>
+                            <div class="jfx-field-error" id="jfx-name-error"></div>
+                        </div>
+
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="jfx-format">Format</label>
+                            <select is="emby-select" id="jfx-format" class="emby-select-withcolor emby-select"></select>
+                            <div class="jfx-field-error" id="jfx-format-error"></div>
+                        </div>
+
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="jfx-resolution">Resolution</label>
+                            <select is="emby-select" id="jfx-resolution"
+                                    class="emby-select-withcolor emby-select"></select>
+                            <div class="jfx-field-error" id="jfx-resolution-error"></div>
+                        </div>
+
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="jfx-audio">Audio channels</label>
+                            <select is="emby-select" id="jfx-audio" class="emby-select-withcolor emby-select"></select>
+                            <div class="fieldDescription">
+                                Original copies the source audio untouched. 5.1 and Stereo transcode to AAC at 6 or 2
+                                channels.
+                            </div>
+                            <div class="jfx-field-error" id="jfx-audio-error"></div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="jfx-directory">Output directory</label>
+                            <input is="emby-input" type="text" id="jfx-directory" required
+                                   placeholder="/media/exports" />
+                            <div class="fieldDescription">
+                                Absolute path on the Jellyfin server. The Movies/ and TV/ folders are created inside
+                                it. The path must exist or be creatable, and writable by the Jellyfin process.
+                            </div>
+                            <div class="jfx-field-error" id="jfx-directory-error"></div>
+                            <div class="jfx-ok" id="jfx-directory-ok"></div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="jfx-enabled" class="emby-checkbox" />
+                                <span>Enabled</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Disabled profiles stay configured but cannot be used to queue new exports.
+                            </div>
+                        </div>
+
+                        <div class="jfx-savebar">
+                            <button is="emby-button" type="submit" id="jfx-apply-profile"
+                                    class="raised button-submit emby-button">
+                                <span>Apply</span>
+                            </button>
+                            <button is="emby-button" type="button" id="jfx-cancel-profile" class="emby-button">
+                                <span>Cancel</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Global settings</h2>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="jfx-max-exports">Max concurrent exports</label>
+                        <input is="emby-input" type="number" id="jfx-max-exports" min="1" max="8" step="1" />
+                        <div class="fieldDescription">
+                            How many FFmpeg exports may run at the same time (1-8). Keep this low on servers that
+                            also transcode for playback.
+                        </div>
+                        <div class="jfx-field-error" id="jfx-max-exports-error"></div>
+                    </div>
+
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="jfx-notify-completion" class="emby-checkbox" />
+                            <span>Send a notification when an export completes</span>
+                        </label>
+                    </div>
+
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="jfx-notify-failure" class="emby-checkbox" />
+                            <span>Send a notification when an export fails</span>
+                        </label>
+                    </div>
+
+                    <div class="jfx-savebar">
+                        <button is="emby-button" type="button" id="jfx-save" class="raised button-submit emby-button">
+                            <span>Save</span>
+                        </button>
+                        <button is="emby-button" type="button" id="jfx-revert" class="emby-button" hidden>
+                            <span>Discard changes</span>
+                        </button>
+                        <span id="jfx-dirty" class="jfx-dirty" hidden>Unsaved changes</span>
+                    </div>
+                </div>
             </div>
         </div>
+
         <script type="text/javascript">
             (function () {
+                'use strict';
+
                 var pluginUniqueId = 'b0473c79-36c1-4386-9006-f941031bbea2';
+                var VALIDATE_URL = 'JellyfinExporter/Profiles/Validate';
+                var PROBE_URL = 'JellyfinExporter/Profiles/ProbeDirectory';
+                var MAX_CONCURRENT_LIMIT = 8;
+
+                // Enum member names are the wire format; the numeric fallback keeps the
+                // page working if a serializer echoes integers instead.
+                var FORMATS = [
+                    { value: 'H264', label: 'H.264 / AVC' },
+                    { value: 'H265', label: 'H.265 / HEVC' },
+                    { value: 'AV1', label: 'AV1' }
+                ];
+                var RESOLUTIONS = [
+                    { value: 'Resolution4K', label: '4K (3840x2160)' },
+                    { value: 'Resolution1080p', label: '1080p (1920x1080)' },
+                    { value: 'Resolution720p', label: '720p (1280x720)' },
+                    { value: 'Resolution480p', label: '480p (854x480)' }
+                ];
+                var AUDIO = [
+                    { value: 'Original', label: 'Original (copy)' },
+                    { value: 'Surround51', label: '5.1 (AAC)' },
+                    { value: 'Stereo', label: 'Stereo (AAC)' }
+                ];
+
+                // The plugin configuration endpoint binds JSON case-sensitively to
+                // the C# property names, so a save has to echo the exact key casing
+                // the server used when it handed the configuration to this page.
+                var PROFILE_FIELDS = [
+                    { server: 'Id', local: 'id' },
+                    { server: 'Name', local: 'name' },
+                    { server: 'Format', local: 'format' },
+                    { server: 'Resolution', local: 'resolution' },
+                    { server: 'AudioChannels', local: 'audioChannels' },
+                    { server: 'OutputDirectory', local: 'outputDirectory' },
+                    { server: 'Enabled', local: 'enabled' }
+                ];
+                var CONFIG_FIELDS = [
+                    { server: 'MaxConcurrentExports', local: 'maxConcurrentExports' },
+                    { server: 'NotifyOnCompletion', local: 'notifyOnCompletion' },
+                    { server: 'NotifyOnFailure', local: 'notifyOnFailure' },
+                    { server: 'DefaultProfileId', local: 'defaultProfileId' }
+                ];
+
                 var page = document.querySelector('#JellyfinExporterConfigPage');
-                var form = document.querySelector('#JellyfinExporterConfigForm');
+                var els = {
+                    errors: document.querySelector('#jfx-config-errors'),
+                    noProfiles: document.querySelector('#jfx-no-profiles'),
+                    table: document.querySelector('#jfx-profiles-table'),
+                    body: document.querySelector('#jfx-profiles-body'),
+                    editor: document.querySelector('#jfx-editor'),
+                    editorTitle: document.querySelector('#jfx-editor-title'),
+                    form: document.querySelector('#jfx-profile-form'),
+                    name: document.querySelector('#jfx-name'),
+                    nameError: document.querySelector('#jfx-name-error'),
+                    format: document.querySelector('#jfx-format'),
+                    formatError: document.querySelector('#jfx-format-error'),
+                    resolution: document.querySelector('#jfx-resolution'),
+                    resolutionError: document.querySelector('#jfx-resolution-error'),
+                    audio: document.querySelector('#jfx-audio'),
+                    audioError: document.querySelector('#jfx-audio-error'),
+                    directory: document.querySelector('#jfx-directory'),
+                    directoryError: document.querySelector('#jfx-directory-error'),
+                    directoryOk: document.querySelector('#jfx-directory-ok'),
+                    enabled: document.querySelector('#jfx-enabled'),
+                    addProfile: document.querySelector('#jfx-add-profile'),
+                    cancelProfile: document.querySelector('#jfx-cancel-profile'),
+                    maxExports: document.querySelector('#jfx-max-exports'),
+                    maxExportsError: document.querySelector('#jfx-max-exports-error'),
+                    notifyCompletion: document.querySelector('#jfx-notify-completion'),
+                    notifyFailure: document.querySelector('#jfx-notify-failure'),
+                    save: document.querySelector('#jfx-save'),
+                    revert: document.querySelector('#jfx-revert'),
+                    dirty: document.querySelector('#jfx-dirty')
+                };
 
-                page.addEventListener('pageshow', function () {
-                    Dashboard.showLoadingMsg();
-                    ApiClient.getPluginConfiguration(pluginUniqueId).then(function (config) {
-                        config.Profiles = config.Profiles || [];
-                        document.querySelector('#MaxConcurrentExports').value = config.MaxConcurrentExports || 1;
-                        document.querySelector('#ProfilesSummary').value = config.Profiles.length + ' profile(s)';
-                        Dashboard.hideLoadingMsg();
-                    }, function () {
-                        Dashboard.hideLoadingMsg();
+                var state = {
+                    server: null,
+                    serverRaw: null,
+                    draft: null,
+                    editingId: null,
+                    issues: [],
+                    dirty: false,
+                    keys: {}
+                };
+
+                function newId() {
+                    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                        return normalizeId(window.crypto.randomUUID());
+                    }
+
+                    var generated = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                        var r = Math.random() * 16 | 0;
+                        var v = c === 'x' ? r : ((r & 0x3) | 0x8);
+                        return v.toString(16);
                     });
-                });
+                    return normalizeId(generated);
+                }
 
-                form.addEventListener('submit', function (e) {
-                    Dashboard.showLoadingMsg();
-                    ApiClient.getPluginConfiguration(pluginUniqueId).then(function (config) {
-                        config.Profiles = config.Profiles || [];
-                        config.MaxConcurrentExports = parseInt(document.querySelector('#MaxConcurrentExports').value, 10) || 1;
-                        ApiClient.updatePluginConfiguration(pluginUniqueId, config).then(function (result) {
-                            Dashboard.processPluginConfigurationUpdateResult(result);
+                // The server serializes Guids without dashes; compare ids in one form.
+                function normalizeId(value) {
+                    return String(value || '').replace(/[^0-9a-f]/gi, '').toLowerCase();
+                }
+
+                function sameId(left, right) {
+                    var a = normalizeId(left);
+                    var b = normalizeId(right);
+                    return a.length > 0 && a === b;
+                }
+
+                function pick(object, name) {
+                    // Plugin configuration JSON has been PascalCase and camelCase
+                    // across Jellyfin releases; read whichever the server sent.
+                    if (!object) {
+                        return undefined;
+                    }
+
+                    if (object[name] !== undefined) {
+                        return object[name];
+                    }
+
+                    var target = name.toLowerCase();
+                    for (var key in object) {
+                        if (Object.prototype.hasOwnProperty.call(object, key) && key.toLowerCase() === target) {
+                            return object[key];
+                        }
+                    }
+
+                    return undefined;
+                }
+
+                function detectKey(object, name, fallback) {
+                    if (!object) {
+                        return fallback;
+                    }
+
+                    var target = name.toLowerCase();
+                    for (var key in object) {
+                        if (Object.prototype.hasOwnProperty.call(object, key) && key.toLowerCase() === target) {
+                            return key;
+                        }
+                    }
+
+                    return fallback;
+                }
+
+                function serverKey(field) {
+                    return state.keys[field] || field;
+                }
+
+                function toServerProfile(profile) {
+                    var out = {};
+                    PROFILE_FIELDS.forEach(function (field) {
+                        out[serverKey(field.server)] = profile[field.local];
+                    });
+                    return out;
+                }
+
+                function canonical(value, options, fallback) {
+                    if (value === null || value === undefined || value === '') {
+                        return fallback;
+                    }
+
+                    var text = String(value);
+                    for (var i = 0; i < options.length; i++) {
+                        if (options[i].value.toLowerCase() === text.toLowerCase()) {
+                            return options[i].value;
+                        }
+                    }
+
+                    var index = parseInt(text, 10);
+                    if (!isNaN(index) && options[index]) {
+                        return options[index].value;
+                    }
+
+                    return fallback;
+                }
+
+                function labelFor(options, value) {
+                    for (var i = 0; i < options.length; i++) {
+                        if (options[i].value === value) {
+                            return options[i].label;
+                        }
+                    }
+
+                    return value;
+                }
+
+                function normalizeProfile(raw) {
+                    raw = raw || {};
+                    return {
+                        id: normalizeId(pick(raw, 'Id')) || newId(),
+                        name: (pick(raw, 'Name') || '').toString().trim(),
+                        format: canonical(pick(raw, 'Format'), FORMATS, FORMATS[0].value),
+                        resolution: canonical(pick(raw, 'Resolution'), RESOLUTIONS, RESOLUTIONS[1].value),
+                        audioChannels: canonical(pick(raw, 'AudioChannels'), AUDIO, AUDIO[0].value),
+                        outputDirectory: (pick(raw, 'OutputDirectory') || '').toString().trim(),
+                        enabled: pick(raw, 'Enabled') === undefined ? true : !!pick(raw, 'Enabled')
+                    };
+                }
+
+                function normalizeConfig(raw) {
+                    raw = raw || {};
+                    var max = parseInt(pick(raw, 'MaxConcurrentExports'), 10);
+                    if (isNaN(max) || max < 1) {
+                        max = 1;
+                    }
+
+                    var notifyOnCompletion = pick(raw, 'NotifyOnCompletion');
+                    var notifyOnFailure = pick(raw, 'NotifyOnFailure');
+
+                    return {
+                        profiles: (pick(raw, 'Profiles') || []).map(normalizeProfile),
+                        defaultProfileId: normalizeId(pick(raw, 'DefaultProfileId')) || null,
+                        maxConcurrentExports: Math.min(max, MAX_CONCURRENT_LIMIT),
+                        notifyOnCompletion: notifyOnCompletion === undefined ? true : !!notifyOnCompletion,
+                        notifyOnFailure: notifyOnFailure === undefined ? true : !!notifyOnFailure
+                    };
+                }
+
+                function copyConfig(config) {
+                    var copy = normalizeConfig(config);
+                    return {
+                        profiles: copy.profiles.map(function (profile) {
+                            return normalizeProfile(profile);
+                        }),
+                        defaultProfileId: copy.defaultProfileId,
+                        maxConcurrentExports: copy.maxConcurrentExports,
+                        notifyOnCompletion: copy.notifyOnCompletion,
+                        notifyOnFailure: copy.notifyOnFailure
+                    };
+                }
+
+                function profileById(id) {
+                    return state.draft.profiles.filter(function (profile) {
+                        return sameId(profile.id, id);
+                    })[0] || null;
+                }
+
+                function issuesFor(profileId, field) {
+                    if (!profileId) {
+                        return state.issues.filter(function (issue) {
+                            return !issue.profileId && issue.field === field;
+                        });
+                    }
+
+                    return state.issues.filter(function (issue) {
+                        return sameId(issue.profileId, profileId) && issue.field === field;
+                    });
+                }
+
+                function setDirty(dirty) {
+                    state.dirty = dirty;
+                    els.dirty.hidden = !dirty;
+                    els.revert.hidden = !dirty;
+                }
+
+                function fillSelect(select, options) {
+                    select.innerHTML = '';
+                    options.forEach(function (option) {
+                        var item = document.createElement('option');
+                        item.value = option.value;
+                        item.textContent = option.label;
+                        select.appendChild(item);
+                    });
+                }
+
+                function buildPayload() {
+                    return {
+                        profiles: state.draft.profiles.map(function (profile) {
+                            return {
+                                id: profile.id,
+                                name: profile.name,
+                                format: profile.format,
+                                resolution: profile.resolution,
+                                audioChannels: profile.audioChannels,
+                                outputDirectory: profile.outputDirectory,
+                                enabled: profile.enabled
+                            };
+                        }),
+                        defaultProfileId: state.draft.defaultProfileId,
+                        maxConcurrentExports: state.draft.maxConcurrentExports,
+                        notifyOnCompletion: state.draft.notifyOnCompletion,
+                        notifyOnFailure: state.draft.notifyOnFailure
+                    };
+                }
+
+                function refreshDirty() {
+                    if (!state.server) {
+                        return;
+                    }
+
+                    var saved = normalizeConfig(state.server);
+                    var savedJson = JSON.stringify({
+                        profiles: saved.profiles,
+                        defaultProfileId: saved.defaultProfileId,
+                        maxConcurrentExports: saved.maxConcurrentExports,
+                        notifyOnCompletion: saved.notifyOnCompletion,
+                        notifyOnFailure: saved.notifyOnFailure
+                    });
+                    setDirty(savedJson !== JSON.stringify(buildPayload()));
+                }
+
+                function renderIssues() {
+                    var serious = state.issues.filter(function (issue) {
+                        return issue.field !== 'DefaultProfileId';
+                    });
+
+                    if (serious.length === 0) {
+                        els.errors.hidden = true;
+                        els.errors.innerHTML = '';
+                        return;
+                    }
+
+                    els.errors.hidden = false;
+                    els.errors.innerHTML = '';
+                    var title = document.createElement('strong');
+                    title.textContent = 'Fix these before saving:';
+                    els.errors.appendChild(title);
+                    var list = document.createElement('ul');
+                    serious.forEach(function (issue) {
+                        var owner = issue.profileId ? profileById(issue.profileId) : null;
+                        var where = owner ? (owner.name || 'Unnamed profile') : 'Settings';
+                        var item = document.createElement('li');
+                        item.textContent = where + ': ' + issue.message;
+                        list.appendChild(item);
+                    });
+                    els.errors.appendChild(list);
+                }
+
+                function issueText(profileId, field) {
+                    return issuesFor(profileId, field).map(function (issue) {
+                        return issue.message;
+                    }).join(' ');
+                }
+
+                function renderTable() {
+                    var profiles = state.draft.profiles;
+                    els.table.hidden = profiles.length === 0;
+                    els.noProfiles.hidden = profiles.length !== 0;
+                    els.body.innerHTML = '';
+
+                    profiles.forEach(function (profile) {
+                        var row = document.createElement('tr');
+                        row.setAttribute('data-profile-id', profile.id);
+
+                        var nameCell = document.createElement('td');
+                        var nameText = document.createElement('span');
+                        nameText.textContent = profile.name || '(unnamed)';
+                        nameCell.appendChild(nameText);
+                        if (sameId(state.draft.defaultProfileId, profile.id)) {
+                            var badge = document.createElement('span');
+                            badge.className = 'jfx-badge';
+                            badge.textContent = 'default';
+                            nameCell.appendChild(document.createTextNode(' '));
+                            nameCell.appendChild(badge);
+                        }
+
+                        if (!profile.enabled) {
+                            var disabledHint = document.createElement('div');
+                            disabledHint.className = 'fieldDescription';
+                            disabledHint.textContent = 'disabled';
+                            nameCell.appendChild(disabledHint);
+                        }
+
+                        if (issueText(profile.id, 'Name')) {
+                            var nameError = document.createElement('div');
+                            nameError.className = 'jfx-field-error';
+                            nameError.textContent = issueText(profile.id, 'Name');
+                            nameCell.appendChild(nameError);
+                        }
+
+                        var formatCell = document.createElement('td');
+                        formatCell.textContent = labelFor(FORMATS, profile.format);
+
+                        var resolutionCell = document.createElement('td');
+                        resolutionCell.textContent = labelFor(RESOLUTIONS, profile.resolution);
+
+                        var audioCell = document.createElement('td');
+                        audioCell.textContent = labelFor(AUDIO, profile.audioChannels);
+
+                        var dirCell = document.createElement('td');
+                        var dirText = document.createElement('span');
+                        dirText.className = 'jfx-dir';
+                        dirText.textContent = profile.outputDirectory || '(none)';
+                        dirCell.appendChild(dirText);
+                        if (issueText(profile.id, 'OutputDirectory')) {
+                            var dirError = document.createElement('div');
+                            dirError.className = 'jfx-field-error';
+                            dirError.textContent = issueText(profile.id, 'OutputDirectory');
+                            dirCell.appendChild(dirError);
+                        }
+
+                        var defaultCell = document.createElement('td');
+                        var radio = document.createElement('input');
+                        radio.type = 'radio';
+                        radio.name = 'jfx-default-profile';
+                        radio.setAttribute('aria-label', 'Use ' + (profile.name || 'this profile') + ' as the default');
+                        radio.checked = sameId(state.draft.defaultProfileId, profile.id);
+                        radio.addEventListener('change', function () {
+                            state.draft.defaultProfileId = normalizeId(profile.id);
+                            state.issues = state.issues.filter(function (issue) {
+                                return issue.field !== 'DefaultProfileId';
+                            });
+                            render();
+                        });
+                        defaultCell.appendChild(radio);
+
+                        var actionsCell = document.createElement('td');
+                        actionsCell.className = 'jfx-actions';
+
+                        var edit = document.createElement('button');
+                        edit.type = 'button';
+                        edit.className = 'raised emby-button';
+                        edit.textContent = 'Edit';
+                        edit.addEventListener('click', function () {
+                            openEditor(profile.id);
+                        });
+
+                        var remove = document.createElement('button');
+                        remove.type = 'button';
+                        remove.className = 'raised emby-button';
+                        remove.textContent = 'Delete';
+                        remove.addEventListener('click', function () {
+                            deleteProfile(profile.id);
+                        });
+
+                        actionsCell.appendChild(edit);
+                        actionsCell.appendChild(document.createTextNode(' '));
+                        actionsCell.appendChild(remove);
+
+                        row.appendChild(nameCell);
+                        row.appendChild(formatCell);
+                        row.appendChild(resolutionCell);
+                        row.appendChild(audioCell);
+                        row.appendChild(dirCell);
+                        row.appendChild(defaultCell);
+                        row.appendChild(actionsCell);
+                        els.body.appendChild(row);
+                    });
+                }
+
+                function renderGlobal() {
+                    els.maxExports.value = state.draft.maxConcurrentExports;
+                    els.notifyCompletion.checked = state.draft.notifyOnCompletion;
+                    els.notifyFailure.checked = state.draft.notifyOnFailure;
+                }
+
+                function render() {
+                    renderTable();
+                    renderGlobal();
+                    renderIssues();
+                    refreshDirty();
+                }
+
+                function clearIssue(profileId, field) {
+                    state.issues = state.issues.filter(function (issue) {
+                        return !(sameId(issue.profileId, profileId) && issue.field === field);
+                    });
+                }
+
+                function openEditor(profileId) {
+                    state.editingId = profileId;
+                    els.nameError.textContent = '';
+                    els.formatError.textContent = '';
+                    els.resolutionError.textContent = '';
+                    els.audioError.textContent = '';
+                    els.directoryError.textContent = '';
+                    els.directoryOk.textContent = '';
+
+                    if (profileId) {
+                        var profile = profileById(profileId);
+                        if (!profile) {
+                            return;
+                        }
+
+                        els.editorTitle.textContent = 'Edit profile';
+                        els.name.value = profile.name;
+                        els.format.value = profile.format;
+                        els.resolution.value = profile.resolution;
+                        els.audio.value = profile.audioChannels;
+                        els.directory.value = profile.outputDirectory;
+                        els.enabled.checked = profile.enabled;
+                        els.nameError.textContent = issueText(profileId, 'Name');
+                        els.directoryError.textContent = issueText(profileId, 'OutputDirectory');
+                    } else {
+                        els.editorTitle.textContent = 'New profile';
+                        els.name.value = '';
+                        els.format.value = FORMATS[0].value;
+                        els.resolution.value = RESOLUTIONS[1].value;
+                        els.audio.value = AUDIO[0].value;
+                        els.directory.value = '';
+                        els.enabled.checked = true;
+                    }
+
+                    els.editor.hidden = false;
+                    els.name.focus();
+                }
+
+                function closeEditor() {
+                    state.editingId = null;
+                    els.editor.hidden = true;
+                }
+
+                function localIssuesFor(profile, profiles) {
+                    var issues = [];
+                    var name = (profile.name || '').trim();
+                    if (!name) {
+                        issues.push({ field: 'Name', message: 'A profile name is required.' });
+                    } else if (name.length > 64) {
+                        issues.push({ field: 'Name', message: 'Profile names are limited to 64 characters.' });
+                    } else {
+                        var clash = profiles.some(function (other) {
+                            return other.id !== profile.id &&
+                                (other.name || '').trim().toLowerCase() === name.toLowerCase();
+                        });
+                        if (clash) {
+                            issues.push({ field: 'Name', message: 'Another profile already uses this name.' });
+                        }
+                    }
+
+                    var directory = (profile.outputDirectory || '').trim();
+                    if (!directory) {
+                        issues.push({ field: 'OutputDirectory', message: 'An output directory is required.' });
+                    } else if (!/^(\/|[A-Za-z]:[\\/]|\\\\)/.test(directory)) {
+                        issues.push({
+                            field: 'OutputDirectory',
+                            message: 'The output directory must be an absolute path, for example /media/exports.'
+                        });
+                    }
+
+                    return issues;
+                }
+
+                function readEditor() {
+                    return {
+                        id: state.editingId || newId(),
+                        name: els.name.value.trim(),
+                        format: els.format.value,
+                        resolution: els.resolution.value,
+                        audioChannels: els.audio.value,
+                        outputDirectory: els.directory.value.trim(),
+                        enabled: els.enabled.checked
+                    };
+                }
+
+                function setEditorIssues(issues) {
+                    var byField = {};
+                    issues.forEach(function (issue) {
+                        byField[issue.field] = (byField[issue.field] || []).concat(issue.message);
+                    });
+
+                    els.nameError.textContent = (byField.Name || []).join(' ');
+                    els.formatError.textContent = (byField.Format || []).join(' ');
+                    els.resolutionError.textContent = (byField.Resolution || []).join(' ');
+                    els.audioError.textContent = (byField.AudioChannels || []).join(' ');
+                    els.directoryError.textContent = (byField.OutputDirectory || []).join(' ');
+                    if (issues.length === 0) {
+                        els.directoryOk.textContent = '';
+                    }
+                }
+
+                function probeDirectory(profile) {
+                    if (!profile || !profile.outputDirectory) {
+                        return;
+                    }
+
+                    var targetId = profile.id;
+                    ApiClient.ajax({
+                        type: 'POST',
+                        url: ApiClient.getUrl(PROBE_URL),
+                        data: JSON.stringify({ path: profile.outputDirectory }),
+                        contentType: 'application/json',
+                        dataType: 'json'
+                    }).then(function (result) {
+                        var valid = pick(result, 'Valid') !== false;
+                        var message = pick(result, 'Message') || 'The output directory is not usable.';
+                        var willBeCreated = !!pick(result, 'WillBeCreated');
+
+                        state.issues = state.issues.filter(function (issue) {
+                            return !(sameId(issue.profileId, targetId) && issue.field === 'OutputDirectory');
+                        });
+
+                        var hint = '';
+                        if (!valid) {
+                            state.issues.push({
+                                profileId: targetId,
+                                field: 'OutputDirectory',
+                                message: message
+                            });
+                        } else if (willBeCreated) {
+                            hint = 'Directory does not exist yet and will be created on the first export.';
+                        }
+
+                        renderTable();
+                        renderIssues();
+
+                        if (sameId(state.editingId, targetId)) {
+                            els.directoryError.textContent = valid ? '' : message;
+                            els.directoryOk.textContent = valid ? hint : '';
+                        }
+                    }, function () {
+                        // Probe endpoint unreachable (older build). Saving is still guarded
+                        // by the server-side directory check.
+                    });
+                }
+
+                function applyProfile(event) {
+                    if (event) {
+                        event.preventDefault();
+                    }
+
+                    var candidate = readEditor();
+                    var local = localIssuesFor(candidate, state.draft.profiles);
+                    if (local.length) {
+                        setEditorIssues(local);
+                        return false;
+                    }
+
+                    setEditorIssues([]);
+
+                    var existing = profileById(candidate.id);
+                    if (existing) {
+                        state.draft.profiles = state.draft.profiles.map(function (profile) {
+                            return sameId(profile.id, candidate.id) ? candidate : profile;
+                        });
+                    } else {
+                        state.draft.profiles.push(candidate);
+                    }
+
+                    if (!state.draft.defaultProfileId) {
+                        state.draft.defaultProfileId = candidate.id;
+                    }
+
+                    clearIssue(candidate.id, 'Name');
+                    clearIssue(candidate.id, 'OutputDirectory');
+                    closeEditor();
+                    render();
+                    // Ask the server whether this directory is really writable.
+                    probeDirectory(candidate);
+                    return false;
+                }
+
+                function deleteProfile(profileId) {
+                    var profile = profileById(profileId);
+                    if (!profile) {
+                        return;
+                    }
+
+                    if (sameId(state.draft.defaultProfileId, profileId)) {
+                        state.issues = state.issues.filter(function (issue) {
+                            return issue.field !== 'DefaultProfileId';
+                        });
+                        var row = els.body.querySelector('[data-profile-id="' + profileId + '"]');
+                        if (row) {
+                            var warn = document.createElement('div');
+                            warn.className = 'jfx-field-error';
+                            warn.textContent = 'Default profile: choose another default before deleting this one.';
+                            row.cells[0].appendChild(warn);
+                        }
+
+                        return;
+                    }
+
+                    var question = 'Delete the export profile "' + (profile.name || 'unnamed') + '"?';
+                    var confirmation = window.Dashboard && Dashboard.confirm
+                        ? Dashboard.confirm(question, 'Delete profile')
+                        : Promise.resolve(window.confirm(question));
+
+                    Promise.resolve(confirmation).then(function (confirmed) {
+                        if (!confirmed) {
+                            return;
+                        }
+
+                        state.draft.profiles = state.draft.profiles.filter(function (item) {
+                            return !sameId(item.id, profileId);
+                        });
+                        state.issues = state.issues.filter(function (issue) {
+                            return !sameId(issue.profileId, profileId);
+                        });
+                        if (sameId(state.editingId, profileId)) {
+                            closeEditor();
+                        }
+
+                        render();
+                    });
+                }
+
+                function clientValidate(payload) {
+                    var issues = [];
+                    payload.profiles.forEach(function (profile) {
+                        localIssuesFor(profile, payload.profiles).forEach(function (issue) {
+                            issues.push({ profileId: profile.id, field: issue.field, message: issue.message });
                         });
                     });
-                    e.preventDefault();
-                    return false;
-                });
+
+                    if (payload.maxConcurrentExports < 1 || payload.maxConcurrentExports > MAX_CONCURRENT_LIMIT) {
+                        issues.push({
+                            profileId: null,
+                            field: 'MaxConcurrentExports',
+                            message: 'Max concurrent exports must be between 1 and ' + MAX_CONCURRENT_LIMIT + '.'
+                        });
+                    }
+
+                    if (payload.defaultProfileId && !payload.profiles.some(function (profile) {
+                        return sameId(profile.id, payload.defaultProfileId);
+                    })) {
+                        issues.push({
+                            profileId: null,
+                            field: 'DefaultProfileId',
+                            message: 'The default profile no longer exists. Choose another default profile or clear it.'
+                        });
+                    }
+
+                    return issues;
+                }
+
+                function payloadForSave() {
+                    var payload = buildPayload();
+                    var max = parseInt(els.maxExports.value, 10);
+                    payload.maxConcurrentExports = isNaN(max) ? state.draft.maxConcurrentExports : max;
+                    payload.notifyOnCompletion = els.notifyCompletion.checked;
+                    payload.notifyOnFailure = els.notifyFailure.checked;
+                    return payload;
+                }
+
+                function mergeForSave(config, payload) {
+                    // Start from what the server returned so members added by later
+                    // versions survive a save from an older page.
+                    var toSave = JSON.parse(JSON.stringify(config || {}));
+                    CONFIG_FIELDS.forEach(function (field) {
+                        toSave[serverKey(field.server)] = payload[field.local];
+                    });
+                    toSave[serverKey('Profiles')] = payload.profiles.map(toServerProfile);
+                    return toSave;
+                }
+
+                function showSaveError(message) {
+                    els.errors.hidden = false;
+                    els.errors.innerHTML = '';
+                    var text = document.createElement('strong');
+                    text.textContent = message;
+                    els.errors.appendChild(text);
+                }
+
+                function persist(payload) {
+                    var toSave = mergeForSave(state.serverRaw, payload);
+                    ApiClient.updatePluginConfiguration(pluginUniqueId, toSave).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                        state.issues = [];
+                        loadConfiguration();
+                    }, function (response) {
+                        Dashboard.hideLoadingMsg();
+                        var detail = response && response.message ? response.message : 'unknown error';
+                        showSaveError('The server rejected the configuration: ' + detail);
+                    });
+                }
+
+                function save() {
+                    var payload = payloadForSave();
+                    els.maxExportsError.textContent = '';
+
+                    var issues = clientValidate(payload);
+                    state.issues = issues;
+                    if (issues.length) {
+                        issues.forEach(function (issue) {
+                            if (issue.field === 'MaxConcurrentExports') {
+                                els.maxExportsError.textContent = issue.message;
+                            }
+                        });
+                        renderTable();
+                        renderIssues();
+                        return;
+                    }
+
+                    Dashboard.showLoadingMsg();
+                    ApiClient.ajax({
+                        type: 'POST',
+                        url: ApiClient.getUrl(VALIDATE_URL),
+                        data: JSON.stringify(payload),
+                        contentType: 'application/json',
+                        dataType: 'json'
+                    }).then(function (result) {
+                        var issues = pick(result, 'Issues');
+                        if (pick(result, 'Valid') === false) {
+                            state.issues = (issues || []).map(function (issue) {
+                                return {
+                                    profileId: normalizeId(pick(issue, 'ProfileId')) || null,
+                                    field: pick(issue, 'Field'),
+                                    message: pick(issue, 'Message')
+                                };
+                            });
+                            renderTable();
+                            renderIssues();
+                            Dashboard.hideLoadingMsg();
+                            return;
+                        }
+
+                        persist(payload);
+                    }, function () {
+                        // Validation endpoint missing (older build): the server-side
+                        // check in Plugin.UpdateConfiguration still rejects bad paths.
+                        persist(payload);
+                    });
+                }
+
+                function loadConfiguration() {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginUniqueId).then(function (config) {
+                        var rawProfiles = pick(config, 'Profiles') || [];
+                        state.keys = {};
+                        PROFILE_FIELDS.forEach(function (field) {
+                            state.keys[field.server] = detectKey(rawProfiles[0], field.server, field.server);
+                        });
+                        state.keys.Profiles = detectKey(config, 'Profiles', 'Profiles');
+                        CONFIG_FIELDS.forEach(function (field) {
+                            state.keys[field.server] = detectKey(config, field.server, field.server);
+                        });
+
+                        state.serverRaw = config;
+                        state.server = normalizeConfig(config);
+                        state.draft = copyConfig(state.server);
+                        state.issues = [];
+                        els.errors.hidden = true;
+                        els.maxExportsError.textContent = '';
+                        els.editor.hidden = true;
+                        state.editingId = null;
+                        render();
+                        Dashboard.hideLoadingMsg();
+
+                        // Report directories that stopped working after a server-side
+                        // change (moved disk, changed permissions).
+                        state.draft.profiles.forEach(function (profile) {
+                            probeDirectory(profile);
+                        });
+                    }, function () {
+                        Dashboard.hideLoadingMsg();
+                        showSaveError('Could not load the plugin configuration.');
+                    });
+                }
+
+                function init() {
+                    fillSelect(els.format, FORMATS);
+                    fillSelect(els.resolution, RESOLUTIONS);
+                    fillSelect(els.audio, AUDIO);
+
+                    els.addProfile.addEventListener('click', function () {
+                        openEditor(null);
+                    });
+
+                    els.form.addEventListener('submit', applyProfile);
+
+                    els.cancelProfile.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        closeEditor();
+                    });
+
+                    els.directory.addEventListener('change', function () {
+                        if (state.editingId) {
+                            probeDirectory({
+                                id: state.editingId,
+                                outputDirectory: els.directory.value.trim()
+                            });
+                        }
+                    });
+
+                    els.maxExports.addEventListener('change', function () {
+                        var value = parseInt(els.maxExports.value, 10);
+                        if (isNaN(value)) {
+                            value = state.draft.maxConcurrentExports;
+                        }
+
+                        state.draft.maxConcurrentExports = value;
+                        refreshDirty();
+                    });
+
+                    els.notifyCompletion.addEventListener('change', function () {
+                        state.draft.notifyOnCompletion = els.notifyCompletion.checked;
+                        refreshDirty();
+                    });
+
+                    els.notifyFailure.addEventListener('change', function () {
+                        state.draft.notifyOnFailure = els.notifyFailure.checked;
+                        refreshDirty();
+                    });
+
+                    els.save.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        save();
+                    });
+
+                    els.revert.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        loadConfiguration();
+                    });
+
+                    page.addEventListener('pageshow', function () {
+                        if (!window.ApiClient) {
+                            showSaveError('Open this page from the Jellyfin dashboard.');
+                            return;
+                        }
+
+                        loadConfiguration();
+                    });
+                }
+
+                init();
             })();
         </script>
     </div>

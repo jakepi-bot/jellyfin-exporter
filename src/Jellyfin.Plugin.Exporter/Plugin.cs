@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Jellyfin.Plugin.Exporter.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
@@ -56,5 +57,28 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                     typeof(Plugin).Namespace)
             }
         };
+    }
+
+    /// <summary>
+    /// Rejects a configuration the settings page should never have saved (for
+    /// example a relative output directory) so the API cannot store profiles
+    /// the exporter could not use.
+    /// </summary>
+    /// <param name="configuration">Candidate configuration.</param>
+    /// <exception cref="ArgumentException">Thrown when the configuration has validation issues.</exception>
+    public override void UpdateConfiguration(BasePluginConfiguration configuration)
+    {
+        if (configuration is PluginConfiguration candidate)
+        {
+            var issues = PluginConfigurationValidator.Validate(candidate);
+            if (issues.Count > 0)
+            {
+                throw new ArgumentException(
+                    "Export configuration rejected: " + string.Join(" ", issues.Select(i => i.Message)),
+                    nameof(configuration));
+            }
+        }
+
+        base.UpdateConfiguration(configuration);
     }
 }

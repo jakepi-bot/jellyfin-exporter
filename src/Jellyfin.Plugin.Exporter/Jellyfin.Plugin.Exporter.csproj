@@ -18,6 +18,12 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- The plugin API controllers derive from ControllerBase and are discovered
+       by the server's application part manager. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="Web/**/*" />
   </ItemGroup>
