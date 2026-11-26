@@ -306,8 +306,100 @@ public class ExportEngineTests
         Assert.False(string.IsNullOrWhiteSpace(result.ErrorMessage));
         Assert.Contains("FFmpeg exited with code", result.ErrorMessage);
         Assert.Empty(PartialFiles(output));
-        Assert.False(Directory.Exists(Path.Combine(output, "Movies", "Broken Encode (2024)"))
-            && Directory.GetFiles(Path.Combine(output, "Movies", "Broken Encode (2024)")).Length > 0);
+
+        // A failure must leave no artifact at all, not just no files: the
+        // destination folder and the Movies/TV skeleton it created are gone.
+        Assert.False(Directory.Exists(output));
+        Assert.False(Directory.Exists(Path.Combine(output, "Movies", "Broken Encode (2024)")));
+    }
+
+    [Fact]
+    public async Task AFailingEpisodeExport_RemovesTheSeasonFolderAndItsEmptyParents()
+    {
+        if (!TestMedia.Available)
+        {
+            return;
+        }
+
+        using var directory = new TestMedia.TempDirectory();
+        var source = TestMedia.CreateSource(directory.Path, "gpu-episode", 640, 360, 2, seconds: 1);
+        var output = directory.Combine("exports");
+        var locator = new FixedLocator(new FfmpegLocation(
+            TestMedia.FfmpegPath,
+            TestMedia.FfprobePath,
+            new HwAccelPlan(HwAccelKind.Cuda),
+            SvtAv1Available()));
+
+        var result = await NewEngine(locator).RunAsync(
+            Job(output, ExportFormat.H264, ExportResolution.Resolution480p, ExportAudioChannels.Stereo),
+            ExportItemInfo.ForEpisode(source, "Broken Show", 3, 7, "Broken Episode"),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(ExportJobStatus.Failed, result.Outcome);
+        Assert.False(Directory.Exists(output));
+        Assert.False(Directory.Exists(Path.Combine(output, "TV", "Broken Show", "Season 03")));
+    }
+
+    [Fact]
+    public async Task AFailingExport_KeepsAFolderThatHoldsAnotherJobsFile()
+    {
+        if (!TestMedia.Available)
+        {
+            return;
+        }
+
+        using var directory = new TestMedia.TempDirectory();
+        var source = TestMedia.CreateSource(directory.Path, "gpu-shared", 640, 360, 2, seconds: 1);
+        var output = directory.Combine("exports");
+
+        // The same destination folder already holds a finished episode from
+        // another job; the failure must not take the folder with it.
+        var destination = Path.Combine(output, "TV", "Shared Show", "Season 01");
+        Directory.CreateDirectory(destination);
+        var finished = Path.Combine(destination, "01 - Pilot.mkv");
+        File.WriteAllText(finished, "another job's export");
+
+        var locator = new FixedLocator(new FfmpegLocation(
+            TestMedia.FfmpegPath,
+            TestMedia.FfprobePath,
+            new HwAccelPlan(HwAccelKind.Cuda),
+            SvtAv1Available()));
+
+        var result = await NewEngine(locator).RunAsync(
+            Job(output, ExportFormat.H264, ExportResolution.Resolution480p, ExportAudioChannels.Stereo),
+            ExportItemInfo.ForEpisode(source, "Shared Show", 1, 2, "Broken Second"),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(ExportJobStatus.Failed, result.Outcome);
+        Assert.True(Directory.Exists(destination));
+        Assert.Equal("another job's export", File.ReadAllText(finished));
+        Assert.Equal(new[] { finished }, Directory.GetFiles(destination));
+        Assert.Empty(PartialFiles(output));
+    }
+
+    [Fact]
+    public async Task ACompletedExport_KeepsItsFolders()
+    {
+        if (!TestMedia.Available)
+        {
+            return;
+        }
+
+        using var directory = new TestMedia.TempDirectory();
+        var source = TestMedia.CreateSource(directory.Path, "kept", 640, 360, 2, seconds: 1);
+        var output = directory.Combine("exports");
+
+        var result = await NewEngine().RunAsync(
+            Job(output, ExportFormat.H264, ExportResolution.Resolution480p, ExportAudioChannels.Stereo),
+            ExportItemInfo.ForMovie(source, "Kept Movie", 2022),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(ExportJobStatus.Completed, result.Outcome);
+        Assert.True(Directory.Exists(Path.Combine(output, "Movies", "Kept Movie (2022)")));
+        Assert.True(File.Exists(result.OutputPath));
     }
 
     [Fact]
@@ -357,8 +449,42 @@ public class ExportEngineTests
 
         Assert.Equal(ExportJobStatus.Cancelled, result.Outcome);
         Assert.Empty(PartialFiles(output));
-        Assert.False(Directory.Exists(Path.Combine(output, "Movies", "Cancelled Movie (2024)"))
-            && Directory.GetFiles(Path.Combine(output, "Movies", "Cancelled Movie (2024)")).Length > 0);
+
+        // Cancelling must leave the tree exactly as it was: no movie folder and
+        // no Movies skeleton.
+        Assert.False(Directory.Exists(output));
+        Assert.False(Directory.Exists(Path.Combine(output, "Movies", "Cancelled Movie (2024)")));
+    }
+
+    [Fact]
+    public async Task CancellingAnEpisodeExport_RemovesTheSeasonFolderAndItsEmptyParents()
+    {
+        if (!TestMedia.Available)
+        {
+            return;
+        }
+
+        using var directory = new TestMedia.TempDirectory();
+        var source = TestMedia.CreateSource(directory.Path, "long-episode", 1280, 720, 2, seconds: 30);
+        var output = directory.Combine("exports");
+        using var cancellation = new CancellationTokenSource();
+
+        var result = await NewEngine().RunAsync(
+            Job(output, ExportFormat.H264, ExportResolution.Resolution1080p, ExportAudioChannels.Stereo),
+            ExportItemInfo.ForEpisode(source, "Long Show", 2, 4, "The Long One"),
+            percent =>
+            {
+                if (percent > 0)
+                {
+                    cancellation.Cancel();
+                }
+            },
+            cancellation.Token);
+
+        Assert.Equal(ExportJobStatus.Cancelled, result.Outcome);
+        Assert.Empty(PartialFiles(output));
+        Assert.False(Directory.Exists(output));
+        Assert.False(Directory.Exists(Path.Combine(output, "TV", "Long Show", "Season 02")));
     }
 
     [Fact]

@@ -37,6 +37,12 @@ directory is absolute, is a directory (or creatable) and accepts a probe file, b
 would otherwise fail after encoding. `POST /Plugins/{id}/Configuration` runs the same checks
 again, so the API cannot store a profile the exporter could not use.
 
+That endpoint is Jellyfin's own, and on a rejected save it answers `400` with a fixed
+`Error processing request.` body; the reason is only in the server log. The settings page therefore
+re-runs `Profiles/Validate` when a save fails and shows the validator's message (and the offending
+profiles) in the page instead of the generic text. A direct API client still gets the generic body,
+so `POST /JellyfinExporter/Profiles/Validate` is the way to read the reason programmatically.
+
 ## Browse and queue exports
 
 The **Exporter** page (`/web/ConfigurationPage?name=Exporter`, also in the dashboard menu) has three
@@ -84,7 +90,10 @@ What each job does:
 4. Encode into a hidden `.partial` file in the destination folder, parse
    `-progress pipe:1` into percentages, and rename it to the final name only when FFmpeg exits 0.
    A cancelled or failed export deletes the partial file, so a half-written file never appears
-   under the finished name.
+   under the finished name. The folders the job created are removed again while they are empty, so
+   a failed or cancelled export leaves no artifact at all, not even an empty
+   `Movies/{Title} ({Year})` or `TV/{Show}/Season {NN}` skeleton. A folder that already existed or
+   that holds another job's file is never touched.
 
 ### FFmpeg, codecs and hardware acceleration
 
@@ -126,8 +135,15 @@ per-codec guidance: 4K 15M/10M/8M, 1080p 6M/4M/3M, 720p 3M/2M/1500k, 480p 1500k/
 ### Cancellation and failures
 
 `POST /Jobs/{id}/cancel` (or a server shutdown) cancels the job's token; the worker kills the
-FFmpeg process tree, deletes the partial file and marks the job `Cancelled`. A non-zero FFmpeg
-exit marks the job `Failed` with the last 2000 characters of stderr as the error message.
+FFmpeg process tree, deletes the partial file and removes the empty destination folders the job
+created, then marks the job `Cancelled`. A non-zero FFmpeg exit marks the job `Failed` with the
+last 2000 characters of stderr as the error message and does the same folder cleanup.
+
+The cleanup walks the job's own folder chain deepest-first (`Season NN`, then the show folder, then
+`TV`, then the profile's output directory), deleting each folder that is empty and stopping at the
+first one that is not: a season folder holding another episode (finished or still encoding) and
+the profile's output directory when it already existed both survive. Nothing outside the job's own
+output directory is ever considered.
 
 ## Status page, job history and notifications
 

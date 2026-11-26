@@ -1079,6 +1079,27 @@
                     els.errors.appendChild(text);
                 }
 
+                function issuesFromResult(result) {
+                    var issues = pick(result, 'Issues');
+                    if (!issues) {
+                        return [];
+                    }
+
+                    return issues.map(function (issue) {
+                        return {
+                            profileId: normalizeId(pick(issue, 'ProfileId')) || null,
+                            field: pick(issue, 'Field'),
+                            message: pick(issue, 'Message')
+                        };
+                    });
+                }
+
+                function showIssues(issues) {
+                    state.issues = issues;
+                    renderTable();
+                    renderIssues();
+                }
+
                 function persist(payload) {
                     var toSave = mergeForSave(state.serverRaw, payload);
                     ApiClient.updatePluginConfiguration(pluginUniqueId, toSave).then(function (result) {
@@ -1086,9 +1107,36 @@
                         state.issues = [];
                         loadConfiguration();
                     }, function (response) {
+                        // Jellyfin's own configuration endpoint answers a rejected
+                        // save with a fixed "Error processing request." body, so the
+                        // validator's message has to come from our Validate route.
+                        reportSaveFailure(payload, response);
+                    });
+                }
+
+                function reportSaveFailure(payload, response) {
+                    var status = response && response.status ? ' (HTTP ' + response.status + ')' : '';
+                    var fallback = 'Jellyfin rejected the configuration' + status
+                        + ' without saying why. Nothing was saved; the server log names the exact reason.';
+
+                    ApiClient.ajax({
+                        type: 'POST',
+                        url: ApiClient.getUrl(VALIDATE_URL),
+                        data: JSON.stringify(payload),
+                        contentType: 'application/json',
+                        dataType: 'json'
+                    }).then(function (result) {
                         Dashboard.hideLoadingMsg();
-                        var detail = response && response.message ? response.message : 'unknown error';
-                        showSaveError('The server rejected the configuration: ' + detail);
+                        var issues = issuesFromResult(result);
+                        if (pick(result, 'Valid') === false && issues.length) {
+                            showIssues(issues);
+                            showSaveError('The server rejected the configuration' + status + ': ' + issues[0].message);
+                        } else {
+                            showSaveError(fallback);
+                        }
+                    }, function () {
+                        Dashboard.hideLoadingMsg();
+                        showSaveError(fallback);
                     });
                 }
 
@@ -1120,17 +1168,8 @@
                         contentType: 'application/json',
                         dataType: 'json'
                     }).then(function (result) {
-                        var issues = pick(result, 'Issues');
                         if (pick(result, 'Valid') === false) {
-                            state.issues = (issues || []).map(function (issue) {
-                                return {
-                                    profileId: normalizeId(pick(issue, 'ProfileId')) || null,
-                                    field: pick(issue, 'Field'),
-                                    message: pick(issue, 'Message')
-                                };
-                            });
-                            renderTable();
-                            renderIssues();
+                            showIssues(issuesFromResult(result));
                             Dashboard.hideLoadingMsg();
                             return;
                         }

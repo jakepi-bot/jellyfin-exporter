@@ -6,7 +6,7 @@
     stamps the same value into meta.json and manifest.json.
   -->
   <PropertyGroup>
-    <Version>0.5.0.1</Version>
+    <Version>0.5.1.0</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
     <JellyfinVersion>12.4.0</JellyfinVersion>

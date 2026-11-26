@@ -104,6 +104,10 @@ public sealed class ExportEngine : IExportEngine
         var desiredPath = OutputLayout.GetFilePath(job.OutputDirectory, item, FfmpegCommandBuilder.ContainerExtension);
         var finalPath = _reservations.ReserveUnique(desiredPath);
 
+        // Folders this job creates are removed again when it does not finish, so
+        // a failed or cancelled export leaves no empty directory skeleton.
+        var createdDirectories = (IReadOnlyList<string>)Array.Empty<string>();
+
         try
         {
             var directory = Path.GetDirectoryName(finalPath);
@@ -112,7 +116,7 @@ public sealed class ExportEngine : IExportEngine
                 throw new ExportException($"The output path has no directory: {finalPath}");
             }
 
-            Directory.CreateDirectory(directory);
+            createdDirectories = OutputTreeCleanup.CreateTrackedDirectory(directory, job.OutputDirectory);
 
             var tempPath = Path.Combine(
                 directory,
@@ -144,7 +148,7 @@ public sealed class ExportEngine : IExportEngine
                 location.EncoderPath,
                 string.Join(' ', command.Arguments));
 
-            return await EncodeAsync(
+            var result = await EncodeAsync(
                 location.EncoderPath,
                 command,
                 tempPath,
@@ -152,10 +156,45 @@ public sealed class ExportEngine : IExportEngine
                 probe.DurationSeconds,
                 progress,
                 cancellationToken).ConfigureAwait(false);
+
+            if (result.Outcome != ExportJobStatus.Completed)
+            {
+                PruneCreatedDirectories(job.Id, createdDirectories);
+            }
+
+            return result;
+        }
+        catch
+        {
+            PruneCreatedDirectories(job.Id, createdDirectories);
+            throw;
         }
         finally
         {
             _reservations.Release(finalPath);
+        }
+    }
+
+    /// <summary>
+    /// Removes the empty folder skeleton a job created before it stopped, so a
+    /// failed or cancelled export leaves the output tree as it was. A folder
+    /// holding another job's file is never removed.
+    /// </summary>
+    private void PruneCreatedDirectories(Guid jobId, IReadOnlyList<string> createdDirectories)
+    {
+        if (createdDirectories.Count == 0)
+        {
+            return;
+        }
+
+        var removed = OutputTreeCleanup.PruneEmptyDirectories(createdDirectories);
+        if (removed.Count > 0)
+        {
+            _logger.LogDebug(
+                "Export {JobId} left no output folders behind; removed {Count} empty folder(s): {Paths}",
+                jobId,
+                removed.Count,
+                string.Join(", ", removed));
         }
     }
 
