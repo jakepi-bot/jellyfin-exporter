@@ -7,6 +7,15 @@
     "owner": "jakepi-bot",
     "category": "General",
     "imageUrl": "",
-    "versions": []
+    "versions": [
+      {
+        "version": "0.1.0.0",
+        "changelog": "Initial scaffold: plugin entry point, configuration page, shared export models and installable release packaging.",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/jakepi-bot/jellyfin-exporter",
+        "checksum": "ef9cbe7f092521acd76a4facf66e50a2",
+        "timestamp": "2026-11-26T15:39:27Z"
+      }
+    ]
   }
 ]
