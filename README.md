@@ -62,6 +62,31 @@ manifest:
 python3 scripts/update_manifest.py --version 0.1.0.1 --zip artifacts/jellyfin-exporter_0.1.0.1.zip --check
 ```
 
+## Verify a published repository
+
+`scripts/verify-install.sh` boots a throwaway `jellyfin/jellyfin:12.4` container, completes the
+startup wizard, registers a plugin repository URL, installs the plugin from the catalogue,
+restarts the server and asserts that:
+
+- the plugin loads as `Active` at the expected version and can be uninstalled;
+- `/web/ConfigurationPage?name=Jellyfin%20Exporter` serves the embedded settings page;
+- the configuration API returns defaults and persists a change across a restart.
+
+```bash
+bash scripts/verify-install.sh \
+  https://raw.githubusercontent.com/jakepi-bot/jellyfin-exporter/main/manifest.json 18096
+```
+
+Requires Docker; the script uses `sudo -n` to clean the previous run's root-owned volumes.
+`PLUGIN_VERSION`, `IMAGE`, `NAME`, `PORT` and `WORK` can be overridden from the environment.
+
+Two operational notes:
+
+- `raw.githubusercontent.com` caches for a few minutes, so a freshly committed `manifest.json`
+  can take up to ~5 minutes to appear. Trigger **Update Plugins** again after that.
+- Jellyfin downloads `versions[].sourceUrl` directly and rejects anything that is not a `.zip`;
+  `scripts/update_manifest.py` points it at the GitHub release asset, not the repository page.
+
 ## Layout
 
 ```
