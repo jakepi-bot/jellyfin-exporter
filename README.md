@@ -101,6 +101,7 @@ src/Jellyfin.Plugin.Exporter/
   meta.json, plugin.xml                   install metadata stamped into the zip
 scripts/package.py                        build the installable zip
 scripts/update_manifest.py                maintain manifest.json
+scripts/verify-install.sh                 install + assert against a stock Jellyfin container
 .github/workflows/build.yml               build + package on every push
 .github/workflows/release.yml             publish zip + manifest on tag
 ```
