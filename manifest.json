@@ -9,6 +9,14 @@
     "imageUrl": "",
     "versions": [
       {
+        "version": "0.1.0.1",
+        "changelog": "Initial scaffold: plugin entry point, configuration page, shared export models and installable release packaging.",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/jakepi-bot/jellyfin-exporter/releases/download/v0.1.0.1/jellyfin-exporter_0.1.0.1.zip",
+        "checksum": "d320bd4064302f05e1813f8a8d47dcbc",
+        "timestamp": "2026-11-26T15:40:49Z"
+      },
+      {
         "version": "0.1.0.0",
         "changelog": "Initial scaffold: plugin entry point, configuration page, shared export models and installable release packaging.",
         "targetAbi": "12.4.0.0",
