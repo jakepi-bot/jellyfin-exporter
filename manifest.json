@@ -9,6 +9,14 @@
     "imageUrl": "",
     "versions": [
       {
+        "version": "0.5.0.1",
+        "changelog": "Point the export page at the registered status page name",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/jakepi-bot/jellyfin-exporter/releases/download/v0.5.0.1/jellyfin-exporter_0.5.0.1.zip",
+        "checksum": "43019cbdcf93d8df6192edce99668a7a",
+        "timestamp": "2026-11-26T17:53:24Z"
+      },
+      {
         "version": "0.5.0.0",
         "changelog": "Add the export status page, persisted job history and notifications",
         "targetAbi": "12.4.0.0",
