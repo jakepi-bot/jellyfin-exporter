@@ -18,7 +18,7 @@ NAME="${NAME:-jellyfin-exporter-verify}"
 WORK="${WORK:-/tmp/jellyfin-exporter-verify}"
 PLUGIN_NAME="Jellyfin Exporter"
 PLUGIN_GUID="b0473c79-36c1-4386-9006-f941031bbea2"
-VERSION="0.1.0.0"
+VERSION="${PLUGIN_VERSION:-0.1.0.1}"
 API="http://127.0.0.1:${PORT}"
 DEVICE_ID="$(python3 -c 'import uuid;print(uuid.uuid4())')"
 # Jellyfin 12.x rejects an empty admin password in the startup wizard.
