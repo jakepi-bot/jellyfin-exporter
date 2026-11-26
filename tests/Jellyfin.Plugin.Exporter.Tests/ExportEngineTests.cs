@@ -361,6 +361,60 @@ public class ExportEngineTests
             && Directory.GetFiles(Path.Combine(output, "Movies", "Cancelled Movie (2024)")).Length > 0);
     }
 
+    [Fact]
+    public async Task VaapiExport_UsesTheHardwareEncoderWhenTheDeviceActuallyWorks()
+    {
+        if (!TestMedia.Available)
+        {
+            return;
+        }
+
+        const string device = "/dev/dri/renderD128";
+        if (!Directory.Exists("/dev/dri") || !File.Exists(device))
+        {
+            return;
+        }
+
+        try
+        {
+            TestMedia.Run(TestMedia.FfmpegPath, new[]
+            {
+                "-hide_banner", "-nostdin", "-loglevel", "error",
+                "-vaapi_device", device,
+                "-f", "lavfi", "-i", "color=c=black:s=256x144:r=1:d=1",
+                "-vf", "format=nv12,hwupload",
+                "-frames:v", "1", "-c:v", "h264_vaapi", "-f", "null", "-"
+            });
+        }
+        catch (InvalidOperationException)
+        {
+            // No working VA-API device on this host (typical for CI).
+            return;
+        }
+
+        using var directory = new TestMedia.TempDirectory();
+        var source = TestMedia.CreateSource(directory.Path, "vaapi", 1280, 720, 2, seconds: 1);
+        var output = directory.Combine("exports");
+        var locator = new FixedLocator(new FfmpegLocation(
+            TestMedia.FfmpegPath,
+            TestMedia.FfprobePath,
+            new HwAccelPlan(HwAccelKind.Vaapi, device),
+            SvtAv1Available()));
+
+        var result = await NewEngine(locator).RunAsync(
+            Job(output, ExportFormat.H264, ExportResolution.Resolution720p, ExportAudioChannels.Stereo),
+            ExportItemInfo.ForMovie(source, "Hardware Movie", 2024),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(ExportJobStatus.Completed, result.Outcome);
+        var probe = TestMedia.Probe(result.OutputPath!);
+        Assert.Equal("h264", probe.VideoCodec);
+        Assert.Equal(1280, probe.Width);
+        Assert.Equal(720, probe.Height);
+        Assert.Equal(2, probe.AudioChannels);
+    }
+
     private sealed class FixedLocator : IFfmpegLocator
     {
         private readonly FfmpegLocation _location;
