@@ -25,6 +25,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Install FFmpeg
+        # The export engine tests encode with the system FFmpeg; they return
+        # early when it is missing, so install it to keep real coverage.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: Build
         run: dotnet build -c Release --nologo
 

@@ -89,4 +89,11 @@ public class ExportJob
     /// Gets a value indicating whether the job is in a terminal state.
     /// </summary>
     public bool IsTerminal => Status is ExportJobStatus.Completed or ExportJobStatus.Failed or ExportJobStatus.Cancelled;
+
+    /// <summary>
+    /// Returns an independent copy. The queue hands copies to readers and
+    /// event subscribers so a caller cannot mutate the queued job.
+    /// </summary>
+    /// <returns>A copy of this job.</returns>
+    public ExportJob Clone() => (ExportJob)MemberwiseClone();
 }

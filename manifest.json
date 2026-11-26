@@ -9,6 +9,14 @@
     "imageUrl": "",
     "versions": [
       {
+        "version": "0.3.0.0",
+        "changelog": "Export engine: FFmpeg command builder, Movies/TV output layout, hardware acceleration detection and the background queue worker.",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/jakepi-bot/jellyfin-exporter/releases/download/v0.3.0.0/jellyfin-exporter_0.3.0.0.zip",
+        "checksum": "57c71fc3214a76878dcd0c04941705ad",
+        "timestamp": "2026-11-26T16:37:58Z"
+      },
+      {
         "version": "0.1.0.1",
         "changelog": "Initial scaffold: plugin entry point, configuration page, shared export models and installable release packaging.",
         "targetAbi": "12.4.0.0",

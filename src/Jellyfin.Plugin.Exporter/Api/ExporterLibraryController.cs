@@ -28,6 +28,12 @@ public class ExporterLibraryController : ControllerBase
     private const int MaxPageSize = 100;
     private const int SampleLabelCount = 5;
 
+    /// <summary>
+    /// Serializes the duplicate-guard read and the enqueue that follows it, so
+    /// two Export requests in flight at once cannot both queue the same item.
+    /// </summary>
+    private static readonly object EnqueueGate = new();
+
     private readonly ILibraryManager _libraryManager;
     private readonly IOutputDirectoryInspector _inspector;
 
@@ -164,34 +170,41 @@ public class ExporterLibraryController : ControllerBase
     [HttpPost("Export")]
     public ActionResult<ExporterPlanResponse> Export([FromBody] ExportRequestPayload? payload)
     {
-        var preparation = Prepare(payload);
-        if (preparation.Error is not null)
+        // The duplicate guard reads the queue and then writes to it. Two Export
+        // requests arriving together (a double click, two tabs) would otherwise
+        // both see an empty queue and enqueue the same item twice. Serializing
+        // plan+enqueue closes that window; the queue itself is only entered for
+        // a short in-memory append, so exports are not held up.
+        lock (EnqueueGate)
         {
-            return StatusCode(preparation.Error.StatusCode, new ExporterApiError(preparation.Error.Message));
-        }
+            var preparation = Prepare(payload);
+            if (preparation.Error is not null)
+            {
+                return StatusCode(preparation.Error.StatusCode, new ExporterApiError(preparation.Error.Message));
+            }
 
-        var queue = HttpContext?.RequestServices?.GetService(typeof(IExportQueue)) as IExportQueue;
-        if (queue is null)
-        {
-            return StatusCode(
-                503,
-                new ExporterApiError(
-                    "The export queue is not running on this server yet, so nothing can be queued. " +
-                    "Install the plugin build that includes the export worker."));
-        }
+            var queue = HttpContext?.RequestServices?.GetService(typeof(IExportQueue)) as IExportQueue;
+            if (queue is null)
+            {
+                return StatusCode(
+                    503,
+                    new ExporterApiError(
+                        "The export queue is not running on this server yet, so nothing can be queued. " +
+                        "Install the plugin build that includes the export worker."));
+            }
 
-        IReadOnlyList<ExportJob> queued;
-        try
-        {
-            queued = queue.Enqueue(preparation.Plan!.Jobs);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ExporterApiError("The export queue rejected the request: " + ex.Message));
-        }
+            IReadOnlyList<ExportJob> queued;
+            try
+            {
+                queued = queue.Enqueue(preparation.Plan!.Jobs);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ExporterApiError("The export queue rejected the request: " + ex.Message));
+            }
 
-        var response = BuildPlanResponse(preparation, queued);
-        return response;
+            return BuildPlanResponse(preparation, queued);
+        }
     }
 
     private static bool TryMapLibraryType(string? type, out BaseItemKind kind, out string error)

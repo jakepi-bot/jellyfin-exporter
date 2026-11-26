@@ -1,4 +1,5 @@
 using Jellyfin.Plugin.Exporter.Configuration;
+using Jellyfin.Plugin.Exporter.Export;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,5 +21,17 @@ public class ExporterServiceRegistrator : IPluginServiceRegistrator
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
         serviceCollection.AddSingleton<IOutputDirectoryInspector, OutputDirectoryInspector>();
+
+        // The queue is a singleton behind two contracts: IExportQueue for
+        // callers that enqueue, and ExportQueue for the worker that drains it.
+        serviceCollection.AddSingleton<ExportQueue>();
+        serviceCollection.AddSingleton<IExportQueue>(provider => provider.GetRequiredService<ExportQueue>());
+
+        serviceCollection.AddSingleton<PathReservationRegistry>();
+        serviceCollection.AddSingleton<IFfmpegLocator, MediaEncoderFfmpegLocator>();
+        serviceCollection.AddSingleton<IExportItemResolver, LibraryExportItemResolver>();
+        serviceCollection.AddSingleton<IExportSettings, PluginExportSettings>();
+        serviceCollection.AddSingleton<IExportEngine, ExportEngine>();
+        serviceCollection.AddHostedService<ExportQueueWorker>();
     }
 }

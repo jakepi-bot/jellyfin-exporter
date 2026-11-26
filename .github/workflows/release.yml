@@ -54,6 +54,7 @@ jobs:
           python3 scripts/update_manifest.py \
             --version "${version}" \
             --zip "artifacts/jellyfin-exporter_${version}.zip" \
+            --changelog "$(git tag -l --format='%(contents:subject)' "${GITHUB_REF_NAME}")" \
             --source-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/jellyfin-exporter_${version}.zip"
 
       - name: Commit manifest
