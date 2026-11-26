@@ -55,9 +55,29 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                     CultureInfo.InvariantCulture,
                     "{0}.Web.configPage.html",
                     typeof(Plugin).Namespace)
+            },
+
+            // The browse/queue page. EnableInMainMenu puts "Exporter" in the
+            // dashboard menu instead of hiding it behind the plugin settings.
+            new PluginPageInfo
+            {
+                Name = BrowsePageName,
+                DisplayName = "Exporter",
+                EmbeddedResourcePath = string.Format(
+                    CultureInfo.InvariantCulture,
+                    "{0}.Web.exporterPage.html",
+                    typeof(Plugin).Namespace),
+                EnableInMainMenu = true,
+                MenuIcon = "file_download"
             }
         };
     }
+
+    /// <summary>
+    /// Route name of the browse/queue page
+    /// (<c>/web/ConfigurationPage?name=Exporter</c>).
+    /// </summary>
+    public const string BrowsePageName = "Exporter";
 
     /// <summary>
     /// Rejects a configuration the settings page should never have saved (for

@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Exporter</title>
+</head>
+<body>
+    <div id="JellyfinExporterBrowsePage" data-role="page" class="page type-interior"
+         data-require="emby-input,emby-button,emby-select,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <style>
+                    #JellyfinExporterBrowsePage .jfx-intro {
+                        margin: 0 0 1em 0;
+                        opacity: 0.8;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-banner {
+                        border-left: 4px solid rgba(128, 128, 128, 0.6);
+                        background: rgba(128, 128, 128, 0.12);
+                        padding: 0.75em 1em;
+                        margin: 0 0 1em 0;
+                        border-radius: 2px;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-banner.jfx-error {
+                        border-left-color: #cc3333;
+                        background: rgba(204, 51, 51, 0.12);
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-banner.jfx-success {
+                        border-left-color: #52b54b;
+                        background: rgba(82, 181, 75, 0.14);
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-banner.jfx-warning {
+                        border-left-color: #b26a00;
+                        background: rgba(178, 106, 0, 0.12);
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-banner:empty {
+                        display: none;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-toolbar {
+                        display: flex;
+                        flex-wrap: wrap;
+                        align-items: center;
+                        gap: 0.75em;
+                        margin: 0 0 1em 0;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-tabs {
+                        display: inline-flex;
+                        border: 1px solid rgba(128, 128, 128, 0.35);
+                        border-radius: 3px;
+                        overflow: hidden;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-tab {
+                        background: transparent;
+                        border: 0;
+                        color: inherit;
+                        padding: 0.5em 1em;
+                        cursor: pointer;
+                        font-size: 0.95em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-tab + .jfx-tab {
+                        border-left: 1px solid rgba(128, 128, 128, 0.35);
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-tab.is-active {
+                        background: rgba(82, 181, 75, 0.22);
+                        font-weight: 600;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-search {
+                        min-width: 14em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-selectall {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.4em;
+                        cursor: pointer;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                        gap: 0.85em;
+                        margin-bottom: 1em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-card {
+                        position: relative;
+                        display: flex;
+                        flex-direction: column;
+                        border: 1px solid rgba(128, 128, 128, 0.3);
+                        border-radius: 4px;
+                        overflow: hidden;
+                        cursor: pointer;
+                        background: rgba(128, 128, 128, 0.06);
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-card.is-selected {
+                        border-color: #52b54b;
+                        box-shadow: 0 0 0 1px #52b54b inset;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-card input[type=checkbox] {
+                        position: absolute;
+                        top: 0.4em;
+                        left: 0.4em;
+                        z-index: 2;
+                        margin: 0;
+                        accent-color: #52b54b;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-poster {
+                        width: 100%;
+                        aspect-ratio: 2 / 3;
+                        object-fit: cover;
+                        display: block;
+                        background: rgba(128, 128, 128, 0.18);
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-poster.jfx-placeholder {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 2em;
+                        opacity: 0.55;
+                        text-transform: uppercase;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-card-body {
+                        padding: 0.5em 0.6em 0.7em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-card-title {
+                        font-size: 0.92em;
+                        font-weight: 600;
+                        line-height: 1.25;
+                        overflow-wrap: anywhere;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-card-meta {
+                        font-size: 0.78em;
+                        opacity: 0.7;
+                        margin-top: 0.2em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-empty {
+                        padding: 2em 1em;
+                        text-align: center;
+                        opacity: 0.7;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-pager {
+                        display: flex;
+                        align-items: center;
+                        gap: 1em;
+                        margin-bottom: 1.25em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-pager button {
+                        background: transparent;
+                        border: 1px solid rgba(128, 128, 128, 0.45);
+                        color: inherit;
+                        border-radius: 3px;
+                        padding: 0.35em 0.9em;
+                        cursor: pointer;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-pager button[disabled] {
+                        opacity: 0.4;
+                        cursor: default;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-queue-bar {
+                        display: flex;
+                        flex-wrap: wrap;
+                        align-items: center;
+                        gap: 0.85em;
+                        padding: 0.85em 1em;
+                        border: 1px solid rgba(128, 128, 128, 0.35);
+                        border-radius: 4px;
+                        background: rgba(128, 128, 128, 0.08);
+                        margin-bottom: 1em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-queue-bar select {
+                        min-width: 12em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-selection {
+                        font-size: 0.9em;
+                        opacity: 0.85;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-confirm {
+                        border: 1px solid #52b54b;
+                        border-radius: 4px;
+                        padding: 1em;
+                        margin-bottom: 1em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-confirm-actions {
+                        display: flex;
+                        gap: 0.75em;
+                        margin-top: 0.85em;
+                        flex-wrap: wrap;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-confirm-actions button {
+                        border-radius: 3px;
+                        padding: 0.45em 1.1em;
+                        cursor: pointer;
+                        border: 1px solid rgba(128, 128, 128, 0.5);
+                        background: transparent;
+                        color: inherit;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-confirm-actions button.jfx-primary {
+                        background: #52b54b;
+                        border-color: #52b54b;
+                        color: #fff;
+                        font-weight: 600;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-samples {
+                        margin: 0.6em 0 0 1.2em;
+                        font-size: 0.85em;
+                        opacity: 0.8;
+                    }
+
+                    #JellyfinExporterBrowsePage [hidden] {
+                        display: none !important;
+                    }
+                </style>
+
+                <h1>Exporter</h1>
+                <p class="jfx-intro">
+                    Pick movies, whole shows or single seasons, choose a profile, then queue the export.
+                    Shows and seasons expand to one job per episode.
+                </p>
+
+                <div id="jfx-error" class="jfx-banner jfx-error"></div>
+                <div id="jfx-warning" class="jfx-banner jfx-warning"></div>
+                <div id="jfx-result" class="jfx-banner jfx-success" hidden></div>
+
+                <div class="jfx-toolbar">
+                    <div class="jfx-tabs" role="tablist">
+                        <button type="button" class="jfx-tab is-active" data-type="Movies" role="tab">Movies</button>
+                        <button type="button" class="jfx-tab" data-type="Series" role="tab">TV Shows</button>
+                        <button type="button" class="jfx-tab" data-type="Seasons" role="tab">TV Seasons</button>
+                    </div>
+                    <input id="jfx-search" class="jfx-search" is="emby-input" type="search"
+                           placeholder="Search this library" aria-label="Search this library">
+                    <label class="jfx-selectall">
+                        <input id="jfx-select-all" type="checkbox" is="emby-checkbox">
+                        <span>Select all on this page</span>
+                    </label>
+                </div>
+
+                <div id="jfx-grid" class="jfx-grid"></div>
+                <div id="jfx-empty" class="jfx-empty" hidden>Nothing to show here yet.</div>
+
+                <div class="jfx-pager">
+                    <button id="jfx-prev" type="button">Previous</button>
+                    <span id="jfx-page-label"></span>
+                    <button id="jfx-next" type="button">Next</button>
+                </div>
+
+                <div class="jfx-queue-bar">
+                    <label for="jfx-profile">Profile</label>
+                    <select id="jfx-profile" is="emby-select" aria-label="Export profile"></select>
+                    <span id="jfx-selection" class="jfx-selection">0 selected</span>
+                    <button id="jfx-export" type="button" class="raised button-submit">Export</button>
+                    <button id="jfx-clear" type="button" class="jfx-clear">Clear selection</button>
+                </div>
+
+                <div id="jfx-confirm" class="jfx-confirm" hidden>
+                    <div id="jfx-confirm-text"></div>
+                    <ul id="jfx-confirm-samples" class="jfx-samples"></ul>
+                    <div class="jfx-confirm-actions">
+                        <button id="jfx-confirm-go" type="button" class="jfx-primary">Queue</button>
+                        <button id="jfx-confirm-cancel" type="button">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            (function () {
+                'use strict';
+
+                var PROFILES_URL = 'JellyfinExporter/Library/Profiles';
+                var ITEMS_URL = 'JellyfinExporter/Library/Items';
+                var PLAN_URL = 'JellyfinExporter/Library/Plan';
+                var EXPORT_URL = 'JellyfinExporter/Library/Export';
+                var STATUS_PAGE = '#/configurationpage?name=Exporter%20Status';
+                var PAGE_SIZE = 24;
+
+                function whenPageReady(callback) {
+                    var el = document.querySelector('#JellyfinExporterBrowsePage');
+                    if (el) {
+                        callback(el);
+                        return;
+                    }
+
+                    var observer = new MutationObserver(function () {
+                        var found = document.querySelector('#JellyfinExporterBrowsePage');
+                        if (found) {
+                            observer.disconnect();
+                            callback(found);
+                        }
+                    });
+                    observer.observe(document.documentElement, { childList: true, subtree: true });
+                }
+
+                // Jellyfin injects plugin pages into the dashboard SPA. Depending on
+                // the client build the inline script runs before or after that
+                // insertion, so resolve the page element either way.
+                var page = null;
+                var els = {};
+
+                function buildElements() {
+                    els = {
+                    error: page.querySelector('#jfx-error'),
+                    warning: page.querySelector('#jfx-warning'),
+                    result: page.querySelector('#jfx-result'),
+                    search: page.querySelector('#jfx-search'),
+                    selectAll: page.querySelector('#jfx-select-all'),
+                    grid: page.querySelector('#jfx-grid'),
+                    empty: page.querySelector('#jfx-empty'),
+                    prev: page.querySelector('#jfx-prev'),
+                    next: page.querySelector('#jfx-next'),
+                    pageLabel: page.querySelector('#jfx-page-label'),
+                    profile: page.querySelector('#jfx-profile'),
+                    selection: page.querySelector('#jfx-selection'),
+                    exportButton: page.querySelector('#jfx-export'),
+                    clear: page.querySelector('#jfx-clear'),
+                    confirm: page.querySelector('#jfx-confirm'),
+                    confirmText: page.querySelector('#jfx-confirm-text'),
+                    confirmSamples: page.querySelector('#jfx-confirm-samples'),
+                    confirmGo: page.querySelector('#jfx-confirm-go'),
+                    confirmCancel: page.querySelector('#jfx-confirm-cancel')
+                    };
+                }
+
+                var state = {
+                    type: 'Movies',
+                    search: '',
+                    startIndex: 0,
+                    total: 0,
+                    items: [],
+                    // Keyed by normalized id so a selection survives paging and tab switches.
+                    selected: {},
+                    profiles: [],
+                    profileId: null,
+                    loading: false,
+                    refreshing: false,
+                    imageUrls: {},
+                    searchTimer: null
+                };
+
+                function normalizeId(value) {
+                    return String(value || '').replace(/[^0-9a-f]/gi, '').toLowerCase();
+                }
+
+                function pick(object, name) {
+                    // Plugin controller responses are PascalCase here; keep the
+                    // lookup tolerant of both casings so a server-side switch to
+                    // camelCase does not blank the page.
+                    if (!object) {
+                        return undefined;
+                    }
+
+                    var variants = [
+                        name,
+                        name.charAt(0).toLowerCase() + name.slice(1),
+                        name.charAt(0).toUpperCase() + name.slice(1)
+                    ];
+
+                    for (var index = 0; index < variants.length; index++) {
+                        if (object[variants[index]] !== undefined) {
+                            return object[variants[index]];
+                        }
+                    }
+
+                    return undefined;
+                }
+
+                function showError(message) {
+                    els.error.textContent = message || '';
+                    els.error.hidden = !message;
+                }
+
+                function showWarning(lines) {
+                    els.warning.textContent = (lines || []).join(' ');
+                    els.warning.hidden = !lines || lines.length === 0;
+                }
+
+                function showResult(html) {
+                    els.result.innerHTML = html || '';
+                    els.result.hidden = !html;
+                }
+
+                // ---------------- HTTP ----------------
+                // fetch with the dashboard's token instead of ApiClient.ajax so the
+                // server's own error text (400/503 bodies) reaches the operator.
+                function request(method, path, params, body) {
+                    if (!window.ApiClient) {
+                        return Promise.reject(new Error('Open this page from the Jellyfin dashboard.'));
+                    }
+
+                    var url = ApiClient.getUrl(path, params);
+                    var headers = { Accept: 'application/json' };
+                    var token = typeof ApiClient.accessToken === 'function' ? ApiClient.accessToken() : null;
+                    if (token) {
+                        headers.Authorization = 'MediaBrowser Token="' + token + '"';
+                    }
+
+                    if (body !== undefined) {
+                        headers['Content-Type'] = 'application/json';
+                    }
+
+                    return fetch(url, {
+                        method: method,
+                        headers: headers,
+                        body: body === undefined ? undefined : JSON.stringify(body)
+                    }).then(function (response) {
+                        return response.text().then(function (text) {
+                            var data = null;
+                            if (text) {
+                                try {
+                                    data = JSON.parse(text);
+                                } catch (parseError) {
+                                    data = null;
+                                }
+                            }
+
+                            if (!response.ok) {
+                                var message = pick(data, 'error') || pick(data, 'title') ||
+                                    ('The server answered ' + response.status + '.');
+                                throw new Error(message);
+                            }
+
+                            return data;
+                        });
+                    });
+                }
+
+                function imageUrl(item) {
+                    var key = normalizeId(item.id);
+                    if (state.imageUrls[key]) {
+                        return Promise.resolve(state.imageUrls[key]);
+                    }
+
+                    var url = ApiClient.getUrl('Items/' + item.imageItemId + '/Images/Primary', {
+                        tag: item.imageTag,
+                        maxHeight: 420,
+                        quality: 88
+                    });
+
+                    var token = typeof ApiClient.accessToken === 'function' ? ApiClient.accessToken() : null;
+                    var headers = token ? { Authorization: 'MediaBrowser Token="' + token + '"' } : {};
+
+                    return fetch(url, { headers: headers }).then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('image ' + response.status);
+                        }
+
+                        return response.blob();
+                    }).then(function (blob) {
+                        var objectUrl = URL.createObjectURL(blob);
+                        state.imageUrls[key] = objectUrl;
+                        return objectUrl;
+                    });
+                }
+
+                // ---------------- profiles ----------------
+                function loadProfiles() {
+                    return request('GET', PROFILES_URL).then(function (data) {
+                        state.profiles = (pick(data, 'profiles') || []).map(function (profile) {
+                            return {
+                                id: normalizeId(pick(profile, 'id')),
+                                name: pick(profile, 'name') || '(unnamed profile)',
+                                enabled: pick(profile, 'enabled') !== false,
+                                isDefault: pick(profile, 'isDefault') === true
+                            };
+                        });
+
+                        var enabled = state.profiles.filter(function (profile) {
+                            return profile.enabled;
+                        });
+
+                        var previous = state.profileId;
+                        els.profile.innerHTML = '';
+
+                        if (enabled.length === 0) {
+                            els.profile.disabled = true;
+                            els.exportButton.disabled = true;
+                            var option = document.createElement('option');
+                            option.value = '';
+                            option.textContent = state.profiles.length === 0
+                                ? 'No profiles configured'
+                                : 'Every profile is disabled';
+                            els.profile.appendChild(option);
+                            showWarning([
+                                'Add an enabled export profile in the plugin settings before queueing exports.'
+                            ]);
+                            return;
+                        }
+
+                        els.profile.disabled = false;
+                        els.exportButton.disabled = false;
+                        enabled.forEach(function (profile) {
+                            var opt = document.createElement('option');
+                            opt.value = profile.id;
+                            opt.textContent = profile.name + (profile.isDefault ? ' (default)' : '');
+                            els.profile.appendChild(opt);
+                        });
+
+                        var defaultId = normalizeId(pick(data, 'defaultProfileId'));
+                        var chosen = enabled.filter(function (profile) {
+                            return profile.id === previous;
+                        })[0] || enabled.filter(function (profile) {
+                            return profile.id === defaultId;
+                        })[0] || enabled[0];
+
+                        state.profileId = chosen.id;
+                        els.profile.value = chosen.id;
+                        showWarning([]);
+                    });
+                }
+
+                // ---------------- library ----------------
+                function loadItems() {
+                    if (state.loading) {
+                        return Promise.resolve();
+                    }
+
+                    state.loading = true;
+                    els.grid.setAttribute('aria-busy', 'true');
+                    showError('');
+
+                    return request('GET', ITEMS_URL, {
+                        type: state.type,
+                        search: state.search || null,
+                        startIndex: state.startIndex,
+                        limit: PAGE_SIZE
+                    }).then(function (data) {
+                        state.items = (pick(data, 'items') || []).map(function (item) {
+                            return {
+                                id: normalizeId(pick(item, 'id')),
+                                name: pick(item, 'name') || '',
+                                itemType: pick(item, 'itemType') || '',
+                                year: pick(item, 'year'),
+                                seriesName: pick(item, 'seriesName'),
+                                seasonNumber: pick(item, 'seasonNumber'),
+                                episodeCount: pick(item, 'episodeCount'),
+                                hasImage: pick(item, 'hasImage') === true,
+                                imageItemId: pick(item, 'imageItemId'),
+                                imageTag: pick(item, 'imageTag')
+                            };
+                        });
+                        state.total = pick(data, 'totalRecordCount') || 0;
+                        render();
+                    }, function (error) {
+                        showError(error.message);
+                        state.items = [];
+                        state.total = 0;
+                        render();
+                    }).then(function () {
+                        state.loading = false;
+                        els.grid.removeAttribute('aria-busy');
+                    });
+                }
+
+                function metaLine(item) {
+                    var parts = [];
+                    if (item.itemType === 'Series') {
+                        parts.push(item.year ? String(item.year) : 'TV show');
+                        if (item.episodeCount !== null && item.episodeCount !== undefined) {
+                            parts.push(item.episodeCount + (item.episodeCount === 1 ? ' episode' : ' episodes'));
+                        }
+                    } else if (item.itemType === 'Season') {
+                        if (item.seriesName) {
+                            parts.push(item.seriesName);
+                        }
+                        if (item.seasonNumber !== null && item.seasonNumber !== undefined) {
+                            parts.push('Season ' + item.seasonNumber);
+                        }
+                        if (item.episodeCount !== null && item.episodeCount !== undefined) {
+                            parts.push(item.episodeCount + (item.episodeCount === 1 ? ' episode' : ' episodes'));
+                        }
+                    } else {
+                        parts.push(item.year ? String(item.year) : 'Movie');
+                    }
+
+                    return parts.join(' \u00b7 ');
+                }
+
+                function render() {
+                    els.grid.innerHTML = '';
+                    els.empty.hidden = state.items.length > 0;
+                    els.empty.textContent = state.items.length === 0 && !state.loading
+                        ? (state.search
+                            ? 'No items match "' + state.search + '".'
+                            : 'This library has nothing to export yet.')
+                        : '';
+
+                    state.items.forEach(function (item) {
+                        els.grid.appendChild(buildCard(item));
+                    });
+
+                    var pages = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
+                    var current = Math.floor(state.startIndex / PAGE_SIZE) + 1;
+                    els.pageLabel.textContent = state.total === 0
+                        ? ''
+                        : 'Page ' + current + ' of ' + pages + ' \u00b7 ' + state.total + ' items';
+                    els.prev.disabled = state.startIndex <= 0;
+                    els.next.disabled = state.startIndex + PAGE_SIZE >= state.total;
+                    refreshSelectionUi();
+                }
+
+                function buildCard(item) {
+                    var card = document.createElement('div');
+                    card.className = 'jfx-card' + (state.selected[item.id] ? ' is-selected' : '');
+                    card.setAttribute('data-item-id', item.id);
+
+                    var checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = !!state.selected[item.id];
+                    checkbox.setAttribute('aria-label', 'Select ' + item.name);
+                    checkbox.addEventListener('click', function (event) {
+                        event.stopPropagation();
+                        toggleItem(item, checkbox.checked);
+                    });
+                    card.appendChild(checkbox);
+
+                    if (item.hasImage && item.imageItemId) {
+                        var img = document.createElement('img');
+                        img.className = 'jfx-poster';
+                        img.alt = '';
+                        img.loading = 'lazy';
+                        img.addEventListener('error', function () {
+                            var placeholder = document.createElement('div');
+                            placeholder.className = 'jfx-poster jfx-placeholder';
+                            placeholder.textContent = (item.name || '?').charAt(0);
+                            img.replaceWith(placeholder);
+                        });
+                        card.appendChild(img);
+                        imageUrl(item).then(function (objectUrl) {
+                            img.src = objectUrl;
+                        }, function () {
+                            if (img.parentNode) {
+                                var placeholder = document.createElement('div');
+                                placeholder.className = 'jfx-poster jfx-placeholder';
+                                placeholder.textContent = (item.name || '?').charAt(0);
+                                img.replaceWith(placeholder);
+                            }
+                        });
+                    } else {
+                        var fallback = document.createElement('div');
+                        fallback.className = 'jfx-poster jfx-placeholder';
+                        fallback.textContent = (item.name || '?').charAt(0);
+                        card.appendChild(fallback);
+                    }
+
+                    var body = document.createElement('div');
+                    body.className = 'jfx-card-body';
+
+                    var title = document.createElement('div');
+                    title.className = 'jfx-card-title';
+                    title.textContent = item.name;
+                    body.appendChild(title);
+
+                    var meta = document.createElement('div');
+                    meta.className = 'jfx-card-meta';
+                    meta.textContent = metaLine(item);
+                    body.appendChild(meta);
+
+                    card.appendChild(body);
+                    card.addEventListener('click', function () {
+                        toggleItem(item, !state.selected[item.id]);
+                        checkbox.checked = !!state.selected[item.id];
+                    });
+
+                    return card;
+                }
+
+                function toggleItem(item, selected) {
+                    if (selected) {
+                        state.selected[item.id] = {
+                            id: item.id,
+                            name: item.name,
+                            itemType: item.itemType
+                        };
+                    } else {
+                        delete state.selected[item.id];
+                    }
+
+                    var card = els.grid.querySelector('[data-item-id="' + item.id + '"]');
+                    if (card) {
+                        card.classList.toggle('is-selected', !!state.selected[item.id]);
+                    }
+
+                    hideConfirm();
+                    refreshSelectionUi();
+                }
+
+                function selectedIds() {
+                    return Object.keys(state.selected);
+                }
+
+                function refreshSelectionUi() {
+                    var count = selectedIds().length;
+                    els.selection.textContent = count === 0
+                        ? '0 selected'
+                        : count + (count === 1 ? ' item selected' : ' items selected');
+
+                    var onPage = state.items.filter(function (item) {
+                        return !!state.selected[item.id];
+                    }).length;
+
+                    els.selectAll.checked = state.items.length > 0 && onPage === state.items.length;
+                    els.selectAll.indeterminate = onPage > 0 && onPage < state.items.length;
+                    els.selectAll.disabled = state.items.length === 0;
+                }
+
+                function hideConfirm() {
+                    els.confirm.hidden = true;
+                    els.confirmText.textContent = '';
+                    els.confirmSamples.innerHTML = '';
+                }
+
+                // ---------------- plan and export ----------------
+                function payload() {
+                    return {
+                        itemIds: selectedIds(),
+                        profileId: state.profileId
+                    };
+                }
+
+                function askConfirmation() {
+                    showError('');
+                    showResult('');
+                    hideConfirm();
+
+                    if (!state.profileId) {
+                        showError('Choose an export profile first.');
+                        return;
+                    }
+
+                    if (selectedIds().length === 0) {
+                        showError('Select at least one movie, show or season.');
+                        return;
+                    }
+
+                    els.exportButton.disabled = true;
+                    request('POST', PLAN_URL, null, payload()).then(function (data) {
+                        var jobCount = pick(data, 'jobCount') || 0;
+                        var duplicateCount = pick(data, 'duplicateCount') || 0;
+                        var missingCount = pick(data, 'missingCount') || 0;
+                        var problems = pick(data, 'problems') || [];
+                        var profileName = pick(data, 'profileName') || '';
+
+                        if (jobCount === 0) {
+                            var nothing = duplicateCount > 0
+                                ? 'Every selected item is already queued with the profile "' + profileName + '".'
+                                : 'The selection expands to no exportable items.';
+                            showWarning([nothing].concat(problems));
+                            return;
+                        }
+
+                        var text = 'Queue ' + jobCount + (jobCount === 1 ? ' job' : ' jobs') +
+                            ' with the profile "' + profileName + '" for ' +
+                            (pick(data, 'selectedCount') || 0) + ' selected ' +
+                            ((pick(data, 'selectedCount') || 0) === 1 ? 'item' : 'items') + '.';
+
+                        if (duplicateCount > 0) {
+                            text += ' ' + duplicateCount +
+                                (duplicateCount === 1 ? ' item is' : ' items are') +
+                                ' already queued with this profile and will be skipped.';
+                        }
+
+                        if (missingCount > 0) {
+                            text += ' ' + missingCount + ' selected ' +
+                                (missingCount === 1 ? 'item no longer exists' : 'items no longer exist') + ' in the library.';
+                        }
+
+                        els.confirmText.textContent = text;
+                        els.confirmSamples.innerHTML = '';
+                        (pick(data, 'sampleItems') || []).forEach(function (label) {
+                            var li = document.createElement('li');
+                            li.textContent = label;
+                            els.confirmSamples.appendChild(li);
+                        });
+
+                        var more = jobCount - (pick(data, 'sampleItems') || []).length;
+                        if (more > 0) {
+                            var li = document.createElement('li');
+                            li.textContent = 'and ' + more + ' more';
+                            els.confirmSamples.appendChild(li);
+                        }
+
+                        els.confirmGo.textContent = 'Queue ' + jobCount + (jobCount === 1 ? ' job' : ' jobs');
+                        els.confirm.hidden = false;
+                        showWarning(problems);
+                    }, function (error) {
+                        showError(error.message);
+                    }).then(function () {
+                        els.exportButton.disabled = false;
+                    });
+                }
+
+                function confirmExport() {
+                    els.confirmGo.disabled = true;
+                    request('POST', EXPORT_URL, null, payload()).then(function (data) {
+                        var queued = pick(data, 'queuedCount') || 0;
+                        var duplicates = pick(data, 'duplicateCount') || 0;
+                        var problems = pick(data, 'problems') || [];
+
+                        var message = queued === 0
+                            ? 'No new jobs were queued.'
+                            : 'Queued ' + queued + (queued === 1 ? ' job' : ' jobs') +
+                              ' with the profile "' + (pick(data, 'profileName') || '') + '".';
+
+                        if (duplicates > 0) {
+                            message += ' ' + duplicates +
+                                (duplicates === 1 ? ' item was' : ' items were') +
+                                ' already queued with this profile and was skipped.';
+                        }
+
+                        showResult(
+                            escapeHtml(message) +
+                            ' <a href="' + STATUS_PAGE + '">Open the export status page</a>.');
+
+                        state.selected = {};
+                        hideConfirm();
+                        showWarning(problems);
+                        if (state.items.length) {
+                            render();
+                        }
+                    }, function (error) {
+                        showError(error.message);
+                    }).then(function () {
+                        els.confirmGo.disabled = false;
+                    });
+                }
+
+                function escapeHtml(value) {
+                    return String(value)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;');
+                }
+
+                // ---------------- wiring ----------------
+                function selectType(type) {
+                    if (state.type === type) {
+                        return Promise.resolve();
+                    }
+
+                    state.type = type;
+                    state.startIndex = 0;
+                    hideConfirm();
+                    Array.prototype.forEach.call(page.querySelectorAll('.jfx-tab'), function (tab) {
+                        tab.classList.toggle('is-active', tab.getAttribute('data-type') === type);
+                    });
+
+                    return loadItems();
+                }
+
+                function init() {
+                    Array.prototype.forEach.call(page.querySelectorAll('.jfx-tab'), function (tab) {
+                        tab.addEventListener('click', function (event) {
+                            event.preventDefault();
+                            selectType(tab.getAttribute('data-type'));
+                        });
+                    });
+
+                    els.search.addEventListener('input', function () {
+                        window.clearTimeout(state.searchTimer);
+                        state.searchTimer = window.setTimeout(function () {
+                            state.search = els.search.value.trim();
+                            state.startIndex = 0;
+                            hideConfirm();
+                            loadItems();
+                        }, 300);
+                    });
+
+                    els.selectAll.addEventListener('change', function () {
+                        state.items.forEach(function (item) {
+                            if (els.selectAll.checked) {
+                                state.selected[item.id] = {
+                                    id: item.id,
+                                    name: item.name,
+                                    itemType: item.itemType
+                                };
+                            } else {
+                                delete state.selected[item.id];
+                            }
+                        });
+
+                        hideConfirm();
+                        render();
+                    });
+
+                    els.prev.addEventListener('click', function () {
+                        state.startIndex = Math.max(0, state.startIndex - PAGE_SIZE);
+                        hideConfirm();
+                        loadItems();
+                    });
+
+                    els.next.addEventListener('click', function () {
+                        state.startIndex += PAGE_SIZE;
+                        hideConfirm();
+                        loadItems();
+                    });
+
+                    els.profile.addEventListener('change', function () {
+                        state.profileId = els.profile.value;
+                        hideConfirm();
+                    });
+
+                    els.clear.addEventListener('click', function () {
+                        state.selected = {};
+                        hideConfirm();
+                        render();
+                    });
+
+                    els.exportButton.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        askConfirmation();
+                    });
+
+                    els.confirmGo.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        confirmExport();
+                    });
+
+                    els.confirmCancel.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        hideConfirm();
+                    });
+
+                    page.addEventListener('pageshow', refresh);
+
+                    // The dashboard may have dispatched pageshow before this script
+                    // attached its listener, so load once here as well.
+                    refresh();
+                }
+
+                function refresh() {
+                    if (state.refreshing) {
+                        return;
+                    }
+
+                    if (!window.ApiClient) {
+                        showError('Open this page from the Jellyfin dashboard.');
+                        return;
+                    }
+
+                    state.refreshing = true;
+                    if (window.Dashboard && Dashboard.showLoadingMsg) {
+                        Dashboard.showLoadingMsg();
+                    }
+
+                    loadProfiles()
+                        .then(loadItems)
+                        .then(function () {
+                            if (window.Dashboard && Dashboard.hideLoadingMsg) {
+                                Dashboard.hideLoadingMsg();
+                            }
+                        }, function (error) {
+                            if (window.Dashboard && Dashboard.hideLoadingMsg) {
+                                Dashboard.hideLoadingMsg();
+                            }
+
+                            showError(error.message);
+                        })
+                        .then(function () {
+                            state.refreshing = false;
+                        });
+                }
+
+                function start(element) {
+                    page = element;
+                    buildElements();
+                    init();
+                }
+
+                var existingPage = document.querySelector('#JellyfinExporterBrowsePage');
+                if (existingPage) {
+                    start(existingPage);
+                } else {
+                    whenPageReady(start);
+                }
+            })();
+        </script>
+    </div>
+</body>
+</html>

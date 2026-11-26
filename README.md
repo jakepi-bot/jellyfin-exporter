@@ -4,10 +4,11 @@ A Jellyfin plugin that exports movies, shows and seasons to a directory you cont
 Jellyfin's own FFmpeg (hardware acceleration when the server has it) and named export profiles
 that choose codec, resolution and audio channels.
 
-**Status: 0.2.0.0.** The plugin installs, ships a working export-profile editor in the dashboard
-settings, validates profile names and output directories server-side, and persists profiles
-across restarts. The export engine, browse UI and status dashboard land in follow-up changes on
-top of this skeleton.
+**Status: 0.3.0.0.** The plugin installs, ships a working export-profile editor in the dashboard
+settings, and adds the **Exporter** page where an administrator browses the library, picks movies,
+whole shows or single seasons and queues one export job per item with a chosen profile. The FFmpeg
+worker and the status dashboard land in follow-up changes on top of this skeleton; until the worker
+is present the enqueue endpoint answers 503 instead of pretending to queue work.
 
 ## Export profiles
 
@@ -33,6 +34,36 @@ probe the directory (`POST /JellyfinExporter/Profiles/Validate` and
 directory is absolute, is a directory (or creatable) and accepts a probe file, because the export
 would otherwise fail after encoding. `POST /Plugins/{id}/Configuration` runs the same checks
 again, so the API cannot store a profile the exporter could not use.
+
+## Browse and queue exports
+
+The **Exporter** page (`/web/ConfigurationPage?name=Exporter`, also in the dashboard menu) has three
+tabs: **Movies**, **TV Shows** and **TV Seasons**. Each tab pages through the real library with
+search, poster thumbnails, per-item checkboxes and a select-all-for-page control. Pick a profile
+in the dropdown (only enabled profiles are offered) and press **Export**. The page first asks the
+server what the selection would queue, shows a confirmation summary (job count, already-queued
+items, items that vanished), and only then enqueues.
+
+Expansion happens on the server:
+
+| Selection | Jobs |
+| --- | --- |
+| Movie, episode, video | one job for that item |
+| Whole show | one job per episode across every season |
+| Single season | one job per episode in that season |
+
+Selecting a show and one of its seasons queues each episode once. Items already queued or running
+with the same profile are skipped, so double-clicking Export does not duplicate work. Profiles that
+are disabled or whose output directory fails validation are rejected with the reason.
+
+Endpoints, all requiring an administrator:
+
+| Route | Purpose |
+| --- | --- |
+| `GET /JellyfinExporter/Library/Profiles` | Profile ids and names for the dropdown (no paths) |
+| `GET /JellyfinExporter/Library/Items?type=Movies|Series|Seasons&search=&startIndex=&limit=` | Paged library browse |
+| `POST /JellyfinExporter/Library/Plan` `{itemIds[], profileId}` | Dry run: what the selection would queue |
+| `POST /JellyfinExporter/Library/Export` `{itemIds[], profileId}` | Expand and enqueue the jobs |
 
 ## Requirements
 
@@ -122,12 +153,19 @@ manifest.json                             plugin repository manifest (served to 
 src/Jellyfin.Plugin.Exporter/
   Plugin.cs                               BasePlugin<PluginConfiguration> + IHasWebPages
   Api/ExporterProfilesController.cs       profile validation endpoints for the settings page
+  Api/ExporterLibraryController.cs        browse/plan/enqueue endpoints for the Exporter page
   Configuration/PluginConfiguration.cs    persisted settings
   Configuration/PluginConfigurationValidator.cs  save-time rules (names, default, limits)
+  Configuration/ExportProfileEligibility.cs      "may this profile queue work right now?"
   Configuration/OutputDirectoryInspector.cs      "is this directory writable?" probe
   Models/                                 shared domain models (see below)
-  Services/                               IExportQueue contract + DI registrator
+  Services/IExportQueue.cs                queue contract implemented by the worker
+  Services/MediaTreeExpansion.cs          series/season -> episode expansion rules
+  Services/ExportSelectionPlanner.cs      job building + already-queued guard
+  Services/JellyfinMediaTreeSource.cs     ILibraryManager adapter for the browser
+  Services/ExporterServiceRegistrator.cs  plugin DI registrations
   Web/configPage.html                     embedded settings page (profile editor)
+  Web/exporterPage.html                   embedded Exporter page (browse + queue)
   meta.json, plugin.xml                   install metadata stamped into the zip
 tests/Jellyfin.Plugin.Exporter.Tests/     xunit tests: XML/JSON round-trip + validation rules
 scripts/package.py                        build the installable zip
@@ -161,6 +199,18 @@ Notes:
   keeps its parameters if the profile is edited or deleted while it runs.
 - Configuration is persisted by Jellyfin's XML serializer, so `PluginConfiguration.Profiles` is a
   concrete `List<ExportProfile>`. Enums travel as member names in both XML and JSON.
+
+## Enqueue contract (for the worker and the status page)
+
+- The browse page posts ids; the server expands them with `ILibraryManager`, so the queue only ever
+  sees leaf items (`Movie`, `Episode`, `Video`, ...) with one job each.
+- Each job snapshots the profile (`Format`, `Resolution`, `AudioChannels`, `OutputDirectory`) and is
+  named for the operator (`Show S01E02 - Name` for episodes).
+- The duplicate guard reads `IExportQueue.GetJobs()` and skips items that already have a
+  non-terminal job for the same profile. It is best-effort: a worker that de-duplicates on enqueue
+  closes the remaining race.
+- `IExportQueue` is resolved from the request's service provider. When no implementation is
+  registered, `POST /Export` answers 503 with an explanation rather than accepting jobs nobody runs.
 
 ## Output layout (contract for the export engine)
 

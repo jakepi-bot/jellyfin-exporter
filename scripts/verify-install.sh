@@ -181,6 +181,27 @@ for marker in 'jfx-profiles-table' 'JellyfinExporter/Profiles/Validate' \
   fi
 done
 
+say "checking the browse page ships and its API is admin-only"
+curl -fsS "${API}/web/ConfigurationPage?name=Exporter" -H "$HDR" >"${WORK}/exporterPage.html"
+for marker in 'JellyfinExporterBrowsePage' 'JellyfinExporter/Library/Items' \
+    'JellyfinExporter/Library/Export' 'jfx-select-all'; do
+  if ! grep -qF "$marker" "${WORK}/exporterPage.html"; then
+    echo "FAIL: browse page is missing ${marker}" >&2
+    exit 1
+  fi
+done
+CODE="$(curl -sS -o /dev/null -w '%{http_code}' "${API}/JellyfinExporter/Library/Items?type=Movies" -H "$HDR")"
+if [ "$CODE" != "200" ]; then
+  echo "FAIL: browse endpoint returned HTTP ${CODE} for an administrator" >&2
+  exit 1
+fi
+CODE="$(curl -sS -o /dev/null -w '%{http_code}' "${API}/JellyfinExporter/Library/Items?type=Movies")"
+if [ "$CODE" != "401" ] && [ "$CODE" != "403" ]; then
+  echo "FAIL: browse endpoint answered unauthenticated requests with HTTP ${CODE}" >&2
+  exit 1
+fi
+echo "browse page served; API requires an administrator (anonymous -> ${CODE})"
+
 # The configuration JSON has been PascalCase and camelCase across Jellyfin
 # releases, so every assertion reads keys case-insensitively.
 NORMALIZE='
