@@ -4,7 +4,7 @@ A Jellyfin plugin that exports movies, shows and seasons to a directory you cont
 Jellyfin's own FFmpeg (hardware acceleration when the server has it) and named export profiles
 that choose codec, resolution and audio channels.
 
-**Status: 0.1.0.0 scaffold.** The plugin installs, registers its configuration page and exposes
+**Status: 0.1.0.1 scaffold.** The plugin installs, registers its configuration page and exposes
 the shared export models. The export engine, settings UI, browse UI and status dashboard land in
 follow-up changes on top of this skeleton.
 
@@ -59,7 +59,7 @@ thing that should write version entries into it. To verify a published artifact 
 manifest:
 
 ```bash
-python3 scripts/update_manifest.py --version 0.1.0.0 --zip artifacts/jellyfin-exporter_0.1.0.0.zip --check
+python3 scripts/update_manifest.py --version 0.1.0.1 --zip artifacts/jellyfin-exporter_0.1.0.1.zip --check
 ```
 
 ## Layout

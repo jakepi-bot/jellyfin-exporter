@@ -5,7 +5,7 @@
   "overview": "Pick movies, series or seasons in the dashboard, choose an export profile, and let Jellyfin's own FFmpeg (hardware acceleration when available) write the files to a directory you control.",
   "owner": "jakepi-bot",
   "category": "General",
-  "version": "0.1.0.0",
+  "version": "0.1.0.1",
   "targetAbi": "12.4.0.0",
   "changelog": "Initial scaffold: plugin entry point, configuration page, shared export models and installable release packaging.",
   "status": "Active",

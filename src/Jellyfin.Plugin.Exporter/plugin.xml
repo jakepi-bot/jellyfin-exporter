@@ -12,7 +12,7 @@
   <owner>jakepi-bot</owner>
   <category>General</category>
   <versions>
-    <version>0.1.0.0</version>
+    <version>0.1.0.1</version>
     <changelog>Initial scaffold: plugin entry point, configuration page, shared export models and installable release packaging.</changelog>
     <targetAbi>12.4.0.0</targetAbi>
   </versions>

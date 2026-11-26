@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "manifest.json"
 META = ROOT / "src" / "Jellyfin.Plugin.Exporter" / "meta.json"
 PROPS = ROOT / "Directory.Build.props"
-SOURCE_URL = "https://github.com/jakepi-bot/jellyfin-exporter"
+RELEASE_ZIP_URL = "https://github.com/jakepi-bot/jellyfin-exporter/releases/download/v{version}/jellyfin-exporter_{version}.zip"
 
 
 def md5(path: Path) -> str:
@@ -48,7 +48,11 @@ def main() -> int:
     parser.add_argument("--zip", required=True, help="path to the published plugin zip")
     parser.add_argument("--changelog", default=None)
     parser.add_argument("--target-abi", default=None)
-    parser.add_argument("--source-url", default=SOURCE_URL)
+    parser.add_argument(
+        "--source-url",
+        default=None,
+        help="direct .zip URL (default: the GitHub release asset for this version)",
+    )
     parser.add_argument("--timestamp", default=None, help="ISO-8601 UTC timestamp (default: now)")
     parser.add_argument("--check", action="store_true", help="verify the manifest checksum instead of updating")
     args = parser.parse_args()
@@ -72,11 +76,12 @@ def main() -> int:
         print(f"MISSING {version} (checksum {checksum})")
         return 1
 
+    source_url = args.source_url or RELEASE_ZIP_URL.format(version=version)
     entry = {
         "version": version,
         "changelog": args.changelog or meta.get("changelog", ""),
         "targetAbi": target_abi,
-        "sourceUrl": args.source_url,
+        "sourceUrl": source_url,
         "checksum": checksum,
         "timestamp": args.timestamp
         or dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),

@@ -41,17 +41,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           version='${{ steps.version.outputs.version }}'
-          gh release create "v${version}" \
-            "artifacts/jellyfin-exporter_${version}.zip" \
-            --title "Jellyfin Exporter ${version}" \
-            --notes "See the changelog in manifest.json. Install from Jellyfin > Plugins > Repositories using https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/manifest.json"
+          tag="v${version}"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --title "Jellyfin Exporter ${version}" \
+              --notes "Install from Jellyfin > Plugins > Repositories using https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/manifest.json"
+          fi
+          gh release upload "$tag" "artifacts/jellyfin-exporter_${version}.zip" --clobber
 
       - name: Update the plugin repository manifest
         run: |
           version='${{ steps.version.outputs.version }}'
           python3 scripts/update_manifest.py \
             --version "${version}" \
-            --zip "artifacts/jellyfin-exporter_${version}.zip"
+            --zip "artifacts/jellyfin-exporter_${version}.zip" \
+            --source-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/jellyfin-exporter_${version}.zip"
 
       - name: Commit manifest
         run: |
