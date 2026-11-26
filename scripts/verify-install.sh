@@ -18,7 +18,15 @@ NAME="${NAME:-jellyfin-exporter-verify}"
 WORK="${WORK:-/tmp/jellyfin-exporter-verify}"
 PLUGIN_NAME="Jellyfin Exporter"
 PLUGIN_GUID="b0473c79-36c1-4386-9006-f941031bbea2"
-VERSION="${PLUGIN_VERSION:-0.4.0.0}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Default to the version this checkout declares, so the script never installs a
+# stale release and fails on "Superseded". Override with PLUGIN_VERSION to check
+# an older release on purpose.
+VERSION="${PLUGIN_VERSION:-$(python3 - "${ROOT}/Directory.Build.props" <<'PY'
+import re, sys
+print(re.search(r"<Version>([^<]+)</Version>", open(sys.argv[1]).read()).group(1))
+PY
+)}"
 API="http://127.0.0.1:${PORT}"
 DEVICE_ID="$(python3 -c 'import uuid;print(uuid.uuid4())')"
 # Jellyfin 12.x rejects an empty admin password in the startup wizard.
