@@ -25,7 +25,7 @@ public class ExporterEngineControllerTests
         Assert.True(body.HardwareEncoding);
         Assert.Equal("/dev/dri/renderD128", body.VaapiDevice);
         Assert.True(body.SvtAv1Available);
-        Assert.True(body.EncoderExists);
+        Assert.Equal(File.Exists(TestMedia.FfmpegPath), body.EncoderExists);
     }
 
     [Fact]
