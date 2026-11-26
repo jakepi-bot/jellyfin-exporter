@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Jellyfin.Plugin.Exporter</RootNamespace>
+    <AssemblyName>Jellyfin.Plugin.Exporter</AssemblyName>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinVersion)">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="Jellyfin.Model" Version="$(JellyfinVersion)">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Web/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="meta.json" CopyToOutputDirectory="Never" />
+    <None Include="plugin.xml" CopyToOutputDirectory="Never" />
+  </ItemGroup>
+
+</Project>

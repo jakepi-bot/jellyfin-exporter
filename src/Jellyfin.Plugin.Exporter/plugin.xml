@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Legacy Emby plugin manifest. Jellyfin itself reads meta.json; this file is
+  kept because the acceptance criteria for the scaffold ask for it and some
+  third-party tooling still inspects it. Keep the fields in sync with meta.json.
+-->
+<Plugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/jellyfin/jellyfin/master/MediaBrowser.Common/Plugins/plugin.xsd">
+  <name>Jellyfin Exporter</name>
+  <guid>b0473c79-36c1-4386-9006-f941031bbea2</guid>
+  <description>Export movies, shows and seasons to a folder using FFmpeg profiles (codec, resolution, audio channels).</description>
+  <overview>Pick movies, series or seasons in the dashboard, choose an export profile, and let Jellyfin's own FFmpeg write the files to a directory you control.</overview>
+  <owner>jakepi-bot</owner>
+  <category>General</category>
+  <versions>
+    <version>0.1.0.0</version>
+    <changelog>Initial scaffold: plugin entry point, configuration page, shared export models and installable release packaging.</changelog>
+    <targetAbi>12.4.0.0</targetAbi>
+  </versions>
+</Plugin>

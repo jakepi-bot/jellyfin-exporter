@@ -1,0 +1,13 @@
+{
+  "guid": "b0473c79-36c1-4386-9006-f941031bbea2",
+  "name": "Jellyfin Exporter",
+  "description": "Export movies, shows and seasons to a folder using FFmpeg profiles (codec, resolution, audio channels).",
+  "overview": "Pick movies, series or seasons in the dashboard, choose an export profile, and let Jellyfin's own FFmpeg (hardware acceleration when available) write the files to a directory you control.",
+  "owner": "jakepi-bot",
+  "category": "General",
+  "version": "0.1.0.0",
+  "targetAbi": "12.4.0.0",
+  "changelog": "Initial scaffold: plugin entry point, configuration page, shared export models and installable release packaging.",
+  "status": "Active",
+  "autoUpdate": true
+}

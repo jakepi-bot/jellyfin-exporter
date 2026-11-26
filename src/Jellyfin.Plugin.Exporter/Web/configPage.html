@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Jellyfin Exporter</title>
+</head>
+<body>
+    <div id="JellyfinExporterConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button">
+        <div data-role="content">
+            <div class="content-primary">
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h1 class="sectionTitle">Jellyfin Exporter</h1>
+                </div>
+                <p>
+                    Placeholder settings page. Export profiles (codec, resolution, audio channels and
+                    output directory) are added by the settings-model task; this page proves the
+                    plugin installs, registers its configuration page and round-trips configuration.
+                </p>
+                <form id="JellyfinExporterConfigForm">
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MaxConcurrentExports">Max concurrent exports</label>
+                        <input id="MaxConcurrentExports" name="MaxConcurrentExports" type="number" min="1" max="8" is="emby-input" />
+                        <div class="fieldDescription">How many FFmpeg exports may run at the same time.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ProfilesSummary">Configured profiles</label>
+                        <input id="ProfilesSummary" type="text" is="emby-input" readonly />
+                        <div class="fieldDescription">Profiles are managed in the export profile section.</div>
+                    </div>
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            (function () {
+                var pluginUniqueId = 'b0473c79-36c1-4386-9006-f941031bbea2';
+                var page = document.querySelector('#JellyfinExporterConfigPage');
+                var form = document.querySelector('#JellyfinExporterConfigForm');
+
+                page.addEventListener('pageshow', function () {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginUniqueId).then(function (config) {
+                        config.Profiles = config.Profiles || [];
+                        document.querySelector('#MaxConcurrentExports').value = config.MaxConcurrentExports || 1;
+                        document.querySelector('#ProfilesSummary').value = config.Profiles.length + ' profile(s)';
+                        Dashboard.hideLoadingMsg();
+                    }, function () {
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+                form.addEventListener('submit', function (e) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginUniqueId).then(function (config) {
+                        config.Profiles = config.Profiles || [];
+                        config.MaxConcurrentExports = parseInt(document.querySelector('#MaxConcurrentExports').value, 10) || 1;
+                        ApiClient.updatePluginConfiguration(pluginUniqueId, config).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+                    e.preventDefault();
+                    return false;
+                });
+            })();
+        </script>
+    </div>
+</body>
+</html>
