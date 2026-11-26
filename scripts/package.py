@@ -50,6 +50,12 @@ def read_props() -> dict[str, str]:
 def stamp_meta(meta: dict, props: dict[str, str]) -> dict:
     meta["version"] = props["version"]
     meta["targetAbi"] = props["target_abi"]
+    # The release workflow passes the annotated tag subject, so the shipped
+    # meta.json describes the release instead of the scaffold text that is
+    # checked in. Without it (local builds) the checked-in value stands.
+    changelog = os.environ.get("PLUGIN_CHANGELOG", "").strip()
+    if changelog:
+        meta["changelog"] = changelog
     return meta
 
 

@@ -29,12 +29,15 @@ jobs:
             exit 1
           fi
           echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "changelog=$(git tag -l --format='%(contents:subject)' "${GITHUB_REF_NAME}")" >> "$GITHUB_OUTPUT"
 
       - name: Build
         run: dotnet build -c Release --nologo
 
       - name: Package plugin zip
         run: python3 scripts/package.py
+        env:
+          PLUGIN_CHANGELOG: ${{ steps.version.outputs.changelog }}
 
       - name: Create GitHub release and attach the zip
         env:
@@ -54,7 +57,7 @@ jobs:
           python3 scripts/update_manifest.py \
             --version "${version}" \
             --zip "artifacts/jellyfin-exporter_${version}.zip" \
-            --changelog "$(git tag -l --format='%(contents:subject)' "${GITHUB_REF_NAME}")" \
+            --changelog "${{ steps.version.outputs.changelog }}" \
             --source-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/jellyfin-exporter_${version}.zip"
 
       - name: Commit manifest
