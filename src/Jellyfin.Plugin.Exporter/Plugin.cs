@@ -69,6 +69,18 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                     typeof(Plugin).Namespace),
                 EnableInMainMenu = true,
                 MenuIcon = "file_download"
+            },
+
+            // The status page the export page links to after queueing, and the
+            // per-job progress/history surface.
+            new PluginPageInfo
+            {
+                Name = StatusPageName,
+                DisplayName = "Export Status",
+                EmbeddedResourcePath = string.Format(
+                    CultureInfo.InvariantCulture,
+                    "{0}.Web.statusPage.html",
+                    typeof(Plugin).Namespace)
             }
         };
     }
@@ -78,6 +90,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// (<c>/web/ConfigurationPage?name=Exporter</c>).
     /// </summary>
     public const string BrowsePageName = "Exporter";
+
+    /// <summary>
+    /// Route name of the export status page
+    /// (<c>/web/ConfigurationPage?name=Export%20Status</c>).
+    /// </summary>
+    public const string StatusPageName = "Export Status";
 
     /// <summary>
     /// Rejects a configuration the settings page should never have saved (for

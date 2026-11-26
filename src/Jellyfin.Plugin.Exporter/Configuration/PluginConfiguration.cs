@@ -18,10 +18,16 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public const int MaxConcurrentExportsLimit = 8;
 
+    /// <summary>
+    /// Highest value accepted for <see cref="JobHistoryLimit"/>.
+    /// </summary>
+    public const int JobHistoryLimitMaximum = 5000;
+
     public PluginConfiguration()
     {
         Profiles = new List<ExportProfile>();
         MaxConcurrentExports = 1;
+        JobHistoryLimit = 200;
         NotifyOnCompletion = true;
         NotifyOnFailure = true;
     }
@@ -43,6 +49,13 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets how many FFmpeg exports may run at the same time.
     /// </summary>
     public int MaxConcurrentExports { get; set; }
+
+    /// <summary>
+    /// Gets or sets how many finished jobs the status page keeps (and how many
+    /// are written to the job history file). Queued and running jobs are always
+    /// kept.
+    /// </summary>
+    public int JobHistoryLimit { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether a Jellyfin notification is

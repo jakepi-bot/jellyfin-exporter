@@ -140,6 +140,9 @@ public class ConfigurationPayload
     /// <summary>Gets or sets the concurrent export limit.</summary>
     public int? MaxConcurrentExports { get; set; }
 
+    /// <summary>Gets or sets how many finished jobs the status page keeps.</summary>
+    public int? JobHistoryLimit { get; set; }
+
     /// <summary>Gets or sets a value indicating whether completion notifications are sent.</summary>
     public bool? NotifyOnCompletion { get; set; }
 
@@ -155,6 +158,7 @@ public class ConfigurationPayload
         var configuration = new PluginConfiguration
         {
             MaxConcurrentExports = MaxConcurrentExports ?? 1,
+            JobHistoryLimit = JobHistoryLimit ?? new PluginConfiguration().JobHistoryLimit,
             NotifyOnCompletion = NotifyOnCompletion ?? true,
             NotifyOnFailure = NotifyOnFailure ?? true,
             DefaultProfileId = ParseGuid(DefaultProfileId),

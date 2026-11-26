@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Export Status</title>
+</head>
+<body>
+    <div id="JellyfinExporterStatusPage" data-role="page" class="page type-interior pluginConfigurationPage"
+         data-require="emby-button">
+        <div data-role="content">
+            <div class="content-primary">
+                <style>
+                    #JellyfinExporterStatusPage .jfx-status-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        flex-wrap: wrap;
+                        gap: 0.5em;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-status-tools {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.75em;
+                        font-size: 0.9em;
+                        opacity: 0.85;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-summary {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 0.5em 1.25em;
+                        margin: 0.5em 0 1em;
+                        font-size: 0.95em;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-chip {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.4em;
+                        padding: 0.2em 0.6em;
+                        border-radius: 999px;
+                        border: 1px solid rgba(128, 128, 128, 0.35);
+                        background: rgba(128, 128, 128, 0.08);
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-alert {
+                        border-left: 4px solid #b26a00;
+                        background: rgba(178, 106, 0, 0.12);
+                        padding: 0.75em 1em;
+                        margin: 0 0 1em 0;
+                        border-radius: 2px;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-banner {
+                        border-left: 4px solid rgba(128, 128, 128, 0.5);
+                        background: rgba(128, 128, 128, 0.1);
+                        padding: 0.6em 0.9em;
+                        margin: 0 0 0.6em 0;
+                        border-radius: 2px;
+                        font-size: 0.95em;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-banner.jfx-banner-success {
+                        border-left-color: #2e7d32;
+                        background: rgba(46, 125, 50, 0.12);
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-banner.jfx-banner-failure {
+                        border-left-color: #cc3333;
+                        background: rgba(204, 51, 51, 0.12);
+                    }
+
+                    /* The dashboard no longer styles table.defaultTable; this table
+                       carries its own neutral, theme-agnostic rules. */
+                    #JellyfinExporterStatusPage table.jfx-jobs {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 0.25em 0 1em;
+                        font-size: 0.95em;
+                    }
+
+                    #JellyfinExporterStatusPage table.jfx-jobs th,
+                    #JellyfinExporterStatusPage table.jfx-jobs td {
+                        vertical-align: top;
+                        text-align: left;
+                        padding: 0.55em 0.7em;
+                        border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+                    }
+
+                    #JellyfinExporterStatusPage table.jfx-jobs th {
+                        font-size: 0.78em;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                        opacity: 0.75;
+                        white-space: nowrap;
+                    }
+
+                    #JellyfinExporterStatusPage table.jfx-jobs th:first-child,
+                    #JellyfinExporterStatusPage table.jfx-jobs td:first-child {
+                        padding-left: 0;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-job-item {
+                        font-weight: 600;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-job-sub {
+                        font-size: 0.85em;
+                        opacity: 0.7;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-path {
+                        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                        font-size: 0.82em;
+                        word-break: break-all;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-error {
+                        color: #cc3333;
+                        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                        font-size: 0.8em;
+                        white-space: pre-wrap;
+                        word-break: break-word;
+                        max-height: 12em;
+                        overflow-y: auto;
+                        margin-top: 0.3em;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-badge {
+                        display: inline-block;
+                        padding: 0.15em 0.55em;
+                        border-radius: 3px;
+                        font-size: 0.78em;
+                        font-weight: 600;
+                        letter-spacing: 0.02em;
+                        border: 1px solid rgba(128, 128, 128, 0.4);
+                        text-transform: uppercase;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-badge-queued {
+                        border-color: rgba(128, 128, 128, 0.5);
+                        background: rgba(128, 128, 128, 0.15);
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-badge-running {
+                        border-color: #1565c0;
+                        background: rgba(21, 101, 192, 0.15);
+                        color: #1565c0;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-badge-completed {
+                        border-color: #2e7d32;
+                        background: rgba(46, 125, 50, 0.15);
+                        color: #2e7d32;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-badge-failed {
+                        border-color: #cc3333;
+                        background: rgba(204, 51, 51, 0.15);
+                        color: #cc3333;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-badge-cancelled {
+                        border-color: rgba(128, 128, 128, 0.5);
+                        background: rgba(128, 128, 128, 0.12);
+                        opacity: 0.85;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-progress {
+                        position: relative;
+                        height: 0.6em;
+                        border-radius: 999px;
+                        background: rgba(128, 128, 128, 0.25);
+                        overflow: hidden;
+                        margin: 0.35em 0 0.2em;
+                        min-width: 8em;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-progress-fill {
+                        position: absolute;
+                        inset: 0 auto 0 0;
+                        width: 0;
+                        background: #1565c0;
+                        transition: width 0.4s ease-out;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-progress-fill.jfx-progress-done {
+                        background: #2e7d32;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-progress-fill.jfx-progress-failed {
+                        background: #cc3333;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-progress-label {
+                        font-size: 0.8em;
+                        opacity: 0.8;
+                        white-space: nowrap;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-active-card {
+                        border: 1px solid rgba(128, 128, 128, 0.3);
+                        border-radius: 4px;
+                        padding: 0.75em 0.9em;
+                        margin: 0 0 0.6em 0;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-actions {
+                        white-space: nowrap;
+                        text-align: right;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-empty {
+                        opacity: 0.75;
+                        font-style: italic;
+                        margin: 0.25em 0 1em;
+                    }
+
+                    #JellyfinExporterStatusPage .jfx-history-tools {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.6em;
+                        margin-bottom: 0.5em;
+                        font-size: 0.9em;
+                    }
+
+                    #JellyfinExporterStatusPage code.jfx-inline {
+                        font-size: 0.85em;
+                    }
+                </style>
+
+                <div class="jfx-status-header">
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h1 class="sectionTitle">Export Status</h1>
+                    </div>
+                    <div class="jfx-status-tools">
+                        <span id="jfx-updated">Loading…</span>
+                        <button is="emby-button" type="button" id="jfx-refresh" class="emby-button">
+                            <span>Refresh</span>
+                        </button>
+                        <button is="emby-button" type="button" id="jfx-open-settings" class="emby-button">
+                            <span>Export settings</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="jfx-error" class="jfx-alert" hidden></div>
+                <div id="jfx-notices"></div>
+                <div id="jfx-summary" class="jfx-summary"></div>
+
+                <div class="verticalSection" id="jfx-active-section">
+                    <h2 class="sectionTitle">Active exports</h2>
+                    <div id="jfx-active"></div>
+                </div>
+
+                <div class="verticalSection" id="jfx-failed-section" hidden>
+                    <h2 class="sectionTitle">Failed exports</h2>
+                    <div id="jfx-failed"></div>
+                </div>
+
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">History</h2>
+                    <div class="jfx-history-tools">
+                        <label for="jfx-history-filter">Show</label>
+                        <select is="emby-select" id="jfx-history-filter" class="emby-select-withcolor emby-select">
+                            <option value="finished" selected>All finished exports</option>
+                            <option value="completed">Completed only</option>
+                            <option value="failed">Failed only</option>
+                            <option value="cancelled">Cancelled only</option>
+                        </select>
+                        <span id="jfx-history-count" class="jfx-job-sub"></span>
+                    </div>
+                    <div id="jfx-history"></div>
+                    <p id="jfx-history-file" class="fieldDescription"></p>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            (function () {
+                'use strict';
+
+                var JOBS_URL = 'JellyfinExporter/Jobs';
+                var POLL_INTERVAL_MS = 3000;
+                var NOTICE_LIFETIME_MS = 20000;
+
+                var STATUSES = ['Queued', 'Running', 'Completed', 'Failed', 'Cancelled'];
+                var STATUS_INDEX = { 0: 'Queued', 1: 'Running', 2: 'Completed', 3: 'Failed', 4: 'Cancelled' };
+
+                var page = document.querySelector('#JellyfinExporterStatusPage');
+                var els = {
+                    updated: document.querySelector('#jfx-updated'),
+                    refresh: document.querySelector('#jfx-refresh'),
+                    settings: document.querySelector('#jfx-open-settings'),
+                    error: document.querySelector('#jfx-error'),
+                    notices: document.querySelector('#jfx-notices'),
+                    summary: document.querySelector('#jfx-summary'),
+                    activeSection: document.querySelector('#jfx-active-section'),
+                    active: document.querySelector('#jfx-active'),
+                    failedSection: document.querySelector('#jfx-failed-section'),
+                    failed: document.querySelector('#jfx-failed'),
+                    history: document.querySelector('#jfx-history'),
+                    historyFilter: document.querySelector('#jfx-history-filter'),
+                    historyCount: document.querySelector('#jfx-history-count'),
+                    historyFile: document.querySelector('#jfx-history-file')
+                };
+
+                var state = {
+                    timer: null,
+                    loading: false,
+                    lastSignature: null,
+                    firstLoad: true
+                };
+
+                function statusName(job) {
+                    var status = job ? job.Status || job.status : null;
+                    if (typeof status === 'number') {
+                        return STATUS_INDEX[status] || 'Queued';
+                    }
+
+                    if (typeof status === 'string') {
+                        var index = parseInt(status, 10);
+                        if (!isNaN(index) && STATUSES[index]) {
+                            return STATUSES[index];
+                        }
+
+                        for (var i = 0; i < STATUSES.length; i++) {
+                            if (STATUSES[i].toLowerCase() === status.toLowerCase()) {
+                                return STATUSES[i];
+                            }
+                        }
+                    }
+
+                    return 'Queued';
+                }
+
+                function pick(object, name) {
+                    if (!object) {
+                        return undefined;
+                    }
+
+                    if (object[name] !== undefined) {
+                        return object[name];
+                    }
+
+                    var lower = name.charAt(0).toLowerCase() + name.slice(1);
+                    return object[lower];
+                }
+
+                function element(tag, className, text) {
+                    var node = document.createElement(tag);
+                    if (className) {
+                        node.className = className;
+                    }
+
+                    if (text !== undefined && text !== null) {
+                        node.textContent = text;
+                    }
+
+                    return node;
+                }
+
+                function parseDate(value) {
+                    if (!value) {
+                        return null;
+                    }
+
+                    var parsed = new Date(value);
+                    return isNaN(parsed.getTime()) ? null : parsed;
+                }
+
+                function formatTime(value) {
+                    var date = parseDate(value);
+                    if (!date) {
+                        return '—';
+                    }
+
+                    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                }
+
+                function formatDateTime(value) {
+                    var date = parseDate(value);
+                    if (!date) {
+                        return '—';
+                    }
+
+                    return date.toLocaleString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+
+                function formatDuration(seconds) {
+                    if (seconds === null || seconds === undefined || isNaN(seconds)) {
+                        return '';
+                    }
+
+                    var total = Math.max(0, Math.round(seconds));
+                    var hours = Math.floor(total / 3600);
+                    var minutes = Math.floor((total % 3600) / 60);
+                    var secs = total % 60;
+                    if (hours > 0) {
+                        return hours + 'h ' + minutes + 'm';
+                    }
+
+                    if (minutes > 0) {
+                        return minutes + 'm ' + secs + 's';
+                    }
+
+                    return secs + 's';
+                }
+
+                function badge(status) {
+                    return element('span', 'jfx-badge jfx-badge-' + status.toLowerCase(), status);
+                }
+
+                function setError(message) {
+                    if (!message) {
+                        els.error.hidden = true;
+                        els.error.textContent = '';
+                        return;
+                    }
+
+                    els.error.hidden = false;
+                    els.error.textContent = message;
+                }
+
+                function showNotice(kind, message) {
+                    var banner = element('div', 'jfx-banner jfx-banner-' + kind, message);
+                    els.notices.appendChild(banner);
+                    window.setTimeout(function () {
+                        if (banner.parentNode === els.notices) {
+                            els.notices.removeChild(banner);
+                        }
+                    }, NOTICE_LIFETIME_MS);
+                }
+
+                function jobAction(job, action, label, className) {
+                    var id = pick(job, 'Id');
+                    var button = element('button', className + ' emby-button', label);
+                    button.setAttribute('is', 'emby-button');
+                    button.type = 'button';
+                    button.addEventListener('click', function () {
+                        button.disabled = true;
+                        sendAction(id, action).then(function () {
+                            refresh(true);
+                        }, function (error) {
+                            button.disabled = false;
+                            setError(errorMessage(error));
+                        });
+                    });
+                    return button;
+                }
+
+                function errorMessage(error) {
+                    if (!error) {
+                        return 'The request failed.';
+                    }
+
+                    if (typeof error === 'string') {
+                        return error;
+                    }
+
+                    if (error.message) {
+                        return error.message;
+                    }
+
+                    try {
+                        var parsed = JSON.parse(error.responseText || '{}');
+                        if (parsed && parsed.message) {
+                            return parsed.message;
+                        }
+                    } catch (ignored) {
+                        // Fall through to the generic text.
+                    }
+
+                    return 'The request failed (' + (error.status || 'unknown') + ').';
+                }
+
+                function sendAction(id, action) {
+                    return new Promise(function (resolve, reject) {
+                        if (!id) {
+                            reject('This job has no id.');
+                            return;
+                        }
+
+                        ApiClient.ajax({
+                            type: 'POST',
+                            url: ApiClient.getUrl(JOBS_URL + '/' + id + '/' + action)
+                        }).then(resolve, reject);
+                    });
+                }
+
+                function progressBlock(job) {
+                    var percent = Number(pick(job, 'ProgressPercent'));
+                    if (isNaN(percent)) {
+                        percent = 0;
+                    }
+
+                    percent = Math.max(0, Math.min(100, percent));
+                    var status = statusName(job);
+                    var wrap = element('div');
+                    var bar = element('div', 'jfx-progress');
+                    var fill = element('div', 'jfx-progress-fill');
+                    if (status === 'Completed') {
+                        fill.className += ' jfx-progress-done';
+                    } else if (status === 'Failed') {
+                        fill.className += ' jfx-progress-failed';
+                    }
+
+                    fill.style.width = percent + '%';
+                    bar.appendChild(fill);
+                    wrap.appendChild(bar);
+
+                    var started = parseDate(pick(job, 'StartedAt'));
+                    var finished = parseDate(pick(job, 'FinishedAt'));
+                    var elapsed = Number(pick(job, 'ElapsedSeconds'));
+                    var label = element('div', 'jfx-progress-label');
+
+                    var parts = [percent.toFixed(percent >= 10 ? 0 : 1) + '%'];
+                    if (status === 'Running' && started) {
+                        parts.push('running ' + formatDuration((Date.now() - started.getTime()) / 1000));
+                    } else if (elapsed && elapsed > 0) {
+                        parts.push('took ' + formatDuration(elapsed));
+                    }
+
+                    label.textContent = parts.join(' · ');
+                    wrap.appendChild(label);
+                    return wrap;
+                }
+
+                function jobTitleCell(job) {
+                    var cell = element('td');
+                    cell.appendChild(element('div', 'jfx-job-item', pick(job, 'ItemName') || pick(job, 'JellyfinItemId') || 'Unknown item'));
+
+                    var parts = [];
+                    var profile = pick(job, 'ProfileName');
+                    var format = pick(job, 'Format');
+                    var resolution = pick(job, 'Resolution');
+                    var audio = pick(job, 'AudioChannels');
+                    if (profile) {
+                        parts.push(profile);
+                    }
+
+                    if (format || resolution) {
+                        parts.push([format, resolution, audio].filter(Boolean).join(' · '));
+                    }
+
+                    var sub = element('div', 'jfx-job-sub', parts.join(' — '));
+                    cell.appendChild(sub);
+                    return cell;
+                }
+
+                function renderActive(jobs) {
+                    els.active.textContent = '';
+                    var active = jobs.filter(function (job) {
+                        var status = statusName(job);
+                        return status === 'Queued' || status === 'Running';
+                    });
+
+                    if (active.length === 0) {
+                        els.active.appendChild(element('p', 'jfx-empty', 'Nothing is queued or running right now.'));
+                        return;
+                    }
+
+                    active.forEach(function (job) {
+                        var card = element('div', 'jfx-active-card');
+                        var header = element('div', 'jfx-status-header');
+                        var left = element('div');
+                        left.appendChild(element('div', 'jfx-job-item', pick(job, 'ItemName') || 'Unknown item'));
+                        var profile = pick(job, 'ProfileName') || 'no profile';
+                        left.appendChild(element('div', 'jfx-job-sub', profile + ' · ' + pick(job, 'Format') + ' · ' + pick(job, 'Resolution')));
+                        header.appendChild(left);
+                        header.appendChild(badge(statusName(job)));
+                        card.appendChild(header);
+                        card.appendChild(progressBlock(job));
+
+                        var footer = element('div', 'jfx-status-header');
+                        var meta = element('div', 'jfx-job-sub');
+                        var started = parseDate(pick(job, 'StartedAt'));
+                        meta.textContent = started
+                            ? 'Started ' + formatDateTime(pick(job, 'StartedAt'))
+                            : 'Queued ' + formatDateTime(pick(job, 'CreatedAt'));
+                        footer.appendChild(meta);
+
+                        var actions = element('div', 'jfx-actions');
+                        if (pick(job, 'CanCancel')) {
+                            actions.appendChild(jobAction(job, 'cancel', 'Cancel', 'raised'));
+                        }
+
+                        footer.appendChild(actions);
+                        card.appendChild(footer);
+                        els.active.appendChild(card);
+                    });
+                }
+
+                function jobRow(job, options) {
+                    var status = statusName(job);
+                    var row = element('tr');
+                    row.appendChild(jobTitleCell(job));
+
+                    var statusCell = element('td');
+                    statusCell.appendChild(badge(status));
+                    row.appendChild(statusCell);
+
+                    var timeCell = element('td');
+                    timeCell.textContent = formatDateTime(pick(job, 'FinishedAt') || pick(job, 'CreatedAt'));
+                    row.appendChild(timeCell);
+
+                    var detailCell = element('td');
+                    if (status === 'Completed') {
+                        var path = pick(job, 'OutputPath');
+                        detailCell.appendChild(element('div', 'jfx-path', path || '(no output path reported)'));
+                    } else {
+                        var error = pick(job, 'ErrorMessage');
+                        detailCell.appendChild(element('div', 'jfx-error', error || 'No error detail was captured.'));
+                    }
+
+                    var detail = element('div', 'jfx-job-sub');
+                    var elapsed = Number(pick(job, 'ElapsedSeconds'));
+                    if (!isNaN(elapsed) && elapsed > 0) {
+                        detail.textContent = 'took ' + formatDuration(elapsed);
+                    }
+
+                    detailCell.appendChild(detail);
+                    row.appendChild(detailCell);
+
+                    var actionsCell = element('td', 'jfx-actions');
+                    if (options && options.retry && pick(job, 'CanRetry')) {
+                        actionsCell.appendChild(jobAction(job, 'retry', 'Retry', 'raised'));
+                    }
+
+                    row.appendChild(actionsCell);
+                    return row;
+                }
+
+                function historyTable(jobs, options) {
+                    var table = element('table', 'defaultTable jfx-jobs');
+                    var head = element('thead');
+                    var headRow = element('tr');
+                    ['Item', 'Status', 'Finished', statusHeader(options), ''].forEach(function (label) {
+                        headRow.appendChild(element('th', null, label));
+                    });
+                    head.appendChild(headRow);
+                    table.appendChild(head);
+
+                    var body = element('tbody');
+                    jobs.forEach(function (job) {
+                        body.appendChild(jobRow(job, options));
+                    });
+                    table.appendChild(body);
+                    return table;
+                }
+
+                function statusHeader(options) {
+                    return options && options.retry ? 'Detail' : 'Output / error';
+                }
+
+                function render(jobs) {
+                    var finishedFilter = els.historyFilter.value || 'finished';
+                    var active = jobs.filter(function (job) {
+                        var status = statusName(job);
+                        return status === 'Queued' || status === 'Running';
+                    });
+
+                    var finished = jobs.filter(function (job) {
+                        var status = statusName(job);
+                        if (finishedFilter === 'finished') {
+                            return status !== 'Queued' && status !== 'Running';
+                        }
+
+                        return status.toLowerCase() === finishedFilter;
+                    });
+
+                    renderActive(jobs);
+
+                    els.failed.textContent = '';
+                    var failed = jobs.filter(function (job) {
+                        return statusName(job) === 'Failed';
+                    });
+
+                    if (failed.length === 0) {
+                        els.failedSection.hidden = true;
+                    } else {
+                        els.failedSection.hidden = false;
+                        els.failed.appendChild(historyTable(failed, { retry: true }));
+                    }
+
+                    els.history.textContent = '';
+                    if (finished.length === 0) {
+                        els.history.appendChild(element('p', 'jfx-empty', 'No exports match this filter yet.'));
+                    } else {
+                        els.history.appendChild(historyTable(finished, { retry: true }));
+                    }
+
+                    els.historyCount.textContent = finished.length + ' shown';
+                    els.activeSection.hidden = false;
+                }
+
+                function renderSummary(payload) {
+                    var counts = payload ? (pick(payload, 'Counts') || pick(payload, 'counts') || {}) : {};
+                    els.summary.textContent = '';
+                    [
+                        ['Running', 'running'],
+                        ['Queued', 'queued'],
+                        ['Completed', 'completed'],
+                        ['Failed', 'failed'],
+                        ['Cancelled', 'cancelled']
+                    ].forEach(function (pair) {
+                        var chip = element('span', 'jfx-chip');
+                        chip.appendChild(badge(pair[0]));
+                        chip.appendChild(element('span', null, String(Number(pick(counts, pair[0])) || 0)));
+                        els.summary.appendChild(chip);
+                    });
+
+                    var file = pick(payload, 'HistoryFile') || (payload && payload.historyFile);
+                    var limit = pick(payload, 'HistoryLimit') || (payload && payload.historyLimit);
+                    els.historyFile.textContent = file
+                        ? 'History is stored on the server at ' + file + (limit ? ' (last ' + limit + ' finished exports)' : '') + '.'
+                        : 'Job history is kept in memory for this server session.';
+                }
+
+                function noticeNewOutcomes(payload) {
+                    var jobs = payload ? (pick(payload, 'Jobs') || payload.jobs || []) : [];
+                    var signature = jobs.map(function (job) {
+                        return pick(job, 'Id') + ':' + statusName(job);
+                    }).join('|');
+
+                    if (state.firstLoad) {
+                        state.lastSignature = signature;
+                        return;
+                    }
+
+                    var previous = state.lastSignature || '';
+                    jobs.forEach(function (job) {
+                        var status = statusName(job);
+                        if (status !== 'Completed' && status !== 'Failed') {
+                            return;
+                        }
+
+                        var key = pick(job, 'Id') + ':' + status;
+                        if (previous.indexOf(key) >= 0) {
+                            return;
+                        }
+
+                        var item = pick(job, 'ItemName') || 'Export';
+                        var profile = pick(job, 'ProfileName') || 'no profile';
+                        if (status === 'Completed') {
+                            showNotice('success', 'Export completed: ' + item + ' (' + profile + ') -> ' + (pick(job, 'OutputPath') || '(no output path reported)'));
+                        } else {
+                            showNotice('failure', 'Export failed: ' + item + ' (' + profile + ') — ' + (pick(job, 'ErrorMessage') || 'no error detail was captured'));
+                        }
+                    });
+
+                    state.lastSignature = signature;
+                }
+
+                function refresh(immediate) {
+                    if (state.loading) {
+                        return;
+                    }
+
+                    state.loading = true;
+                    ApiClient.ajax({
+                        type: 'GET',
+                        url: ApiClient.getUrl(JOBS_URL),
+                        dataType: 'json'
+                    }).then(function (payload) {
+                        setError(null);
+                        renderSummary(payload);
+                        noticeNewOutcomes(payload);
+                        render(payload ? (pick(payload, 'Jobs') || payload.jobs || []) : []);
+
+                        var storageError = pick(payload, 'StorageError');
+                        if (storageError) {
+                            setError('The job history could not be written: ' + storageError);
+                        }
+
+                        var serverTime = parseDate(pick(payload, 'ServerTimeUtc'));
+                        els.updated.textContent = 'Updated ' + formatTime((serverTime || new Date()).toISOString());
+                        state.firstLoad = false;
+                    }, function (error) {
+                        setError('Could not load the export status: ' + errorMessage(error));
+                        els.updated.textContent = 'Update failed';
+                    }).then(function () {
+                        state.loading = false;
+                        if (immediate) {
+                            schedule();
+                        }
+                    });
+                }
+
+                function stop() {
+                    if (state.timer) {
+                        window.clearTimeout(state.timer);
+                        state.timer = null;
+                    }
+                }
+
+                function schedule() {
+                    stop();
+                    if (document.hidden) {
+                        return;
+                    }
+
+                    state.timer = window.setTimeout(function () {
+                        refresh(false);
+                        schedule();
+                    }, POLL_INTERVAL_MS);
+                }
+
+                function init() {
+                    els.refresh.addEventListener('click', function () {
+                        refresh(true);
+                    });
+
+                    els.historyFilter.addEventListener('change', function () {
+                        refresh(true);
+                    });
+
+                    els.settings.addEventListener('click', function () {
+                        Dashboard.navigate('configurationpage?name=' + encodeURIComponent('Jellyfin Exporter'));
+                    });
+
+                    document.addEventListener('visibilitychange', function () {
+                        if (!document.hidden) {
+                            refresh(true);
+                        } else {
+                            stop();
+                        }
+                    });
+
+                    page.addEventListener('pageshow', function () {
+                        if (!window.ApiClient) {
+                            setError('Open this page from the Jellyfin dashboard.');
+                            return;
+                        }
+
+                        refresh(true);
+                    });
+
+                    page.addEventListener('pagehide', stop);
+                }
+
+                init();
+            })();
+        </script>
+    </div>
+</body>
+</html>

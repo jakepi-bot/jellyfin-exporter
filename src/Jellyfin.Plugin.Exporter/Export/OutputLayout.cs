@@ -66,14 +66,30 @@ public static class OutputLayout
     /// Builds the movie folder name, <c>{Title} ({Year})</c>, dropping the year
     /// when Jellyfin does not know it.
     /// </summary>
+    /// <remarks>
+    /// A title that already ends with the same year — which is what Jellyfin
+    /// reports for a file named <c>Title (2020).mkv</c> when no metadata
+    /// provider renamed it — is not given a second year.
+    /// </remarks>
     /// <param name="item">Item being exported.</param>
     /// <returns>Folder and file base name for a movie.</returns>
     public static string GetMovieBaseName(ExportItemInfo item)
     {
         var title = SanitizeName(item.Title, "Untitled Movie");
-        return item.Year is int year
-            ? string.Format(CultureInfo.InvariantCulture, "{0} ({1})", title, year)
-            : title;
+        if (item.Year is not int year)
+        {
+            return title;
+        }
+
+        var suffix = "(" + year.ToString(CultureInfo.InvariantCulture) + ")";
+        if (title.EndsWith(" " + suffix, StringComparison.OrdinalIgnoreCase))
+        {
+            title = title[..^(suffix.Length + 1)].TrimEnd();
+        }
+
+        return title.Length == 0
+            ? string.Format(CultureInfo.InvariantCulture, "Untitled Movie ({0})", year)
+            : string.Format(CultureInfo.InvariantCulture, "{0} ({1})", title, year);
     }
 
     /// <summary>

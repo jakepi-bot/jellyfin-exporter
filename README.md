@@ -4,12 +4,13 @@ A Jellyfin plugin that exports movies, shows and seasons to a directory you cont
 Jellyfin's own FFmpeg (hardware acceleration when the server has it) and named export profiles
 that choose codec, resolution and audio channels.
 
-**Status: 0.4.0.0.** The plugin installs, ships a working export-profile editor in the dashboard,
-and has an **Exporter** page where an administrator browses the library, picks movies, whole shows
-or single seasons and queues one export job per item with a chosen profile. A background worker
-drains that queue, runs Jellyfin's own FFmpeg one process per job (hardware encoding when the
-server has it), writes the documented Movies/TV layout, reports progress, captures FFmpeg errors
-and leaves no partial files behind. The status dashboard lands in a follow-up change.
+**Status: 0.5.0.0.** The plugin installs, ships a working export-profile editor in the dashboard
+settings, an **Exporter** page where an administrator browses the library and queues one export job
+per item with a chosen profile, and an **Export Status** page with live progress, history and
+failures with retry. A background worker drains the queue, runs Jellyfin's own FFmpeg one process
+per job (hardware encoding when the server has it), writes the documented Movies/TV layout, reports
+progress, captures FFmpeg errors, and leaves no partial files behind. The job history is persisted
+across restarts, and every finished export raises a Jellyfin notification.
 
 ## Export profiles
 
@@ -128,6 +129,63 @@ per-codec guidance: 4K 15M/10M/8M, 1080p 6M/4M/3M, 720p 3M/2M/1500k, 480p 1500k/
 FFmpeg process tree, deletes the partial file and marks the job `Cancelled`. A non-zero FFmpeg
 exit marks the job `Failed` with the last 2000 characters of stderr as the error message.
 
+## Status page, job history and notifications
+
+**Dashboard > Plugins > Jellyfin Exporter > Export status** (also
+`/web/index.html#/configurationpage?name=Export%20Status`) polls the queue every three seconds and
+shows:
+
+* active exports as cards with a live progress bar, percentage, elapsed time and a **Cancel**
+  button (queued jobs cancel immediately, running jobs are stopped by killing FFmpeg);
+* failed exports with the captured FFmpeg error and a **Retry** button that queues the same item,
+  profile snapshot and output directory again;
+* a history table of finished exports with the output path (or the error), the status and the
+  duration, filterable by completed / failed / cancelled;
+* a banner for each export that finished while the page was open, and the counts for the whole
+  queue.
+
+The page is admin-only, like the rest of the plugin API. Both pages are registered with the
+plugin, so the settings page links to the status page and back.
+
+### Job history survives restarts
+
+Every status transition is written to `jobs.json` in the plugin's data folder
+(`<config>/plugins/Jellyfin.Plugin.Exporter/jobs.json`), atomically (temporary file + rename), so the history
+survives a server restart and a crash mid-write cannot truncate it. A file that cannot be parsed is
+preserved as `jobs.corrupt-<timestamp>.json` instead of being deleted. The number of finished jobs
+kept is the **Job history** setting (1-5000, default 200); queued and running jobs are never
+pruned. On startup a job that was **queued** stays queued and the worker runs it again; a job that
+was **running** when the server stopped cannot be resumed, so it is recorded as failed with
+"the server restarted while this export was running" instead of showing as running forever.
+
+### Notifications
+
+Every terminal state raises a Jellyfin notification, once per job, and honours the two toggles in
+the plugin settings (**Send a notification when an export completes / fails**):
+
+```
+Export completed: The Movie (Archive 1080p) -> /exports/Movies/The Movie (2020)/The Movie (2020).mkv
+Export failed: The Movie (Archive 1080p) — FFmpeg exited with code 1: Unknown encoder 'h264_nvenc'
+```
+
+Jellyfin 12 removed the notification subsystem the 10.x plugins used: `INotificationManager`,
+`NotificationRequest` and the `/Notifications` endpoints do not exist in the 12.4 plugin API, so a
+plugin cannot post to the old dashboard notification drawer. The native equivalent in 12.4 is the
+activity log, which the dashboard streams live on its Activity page, and that is what the plugin
+writes: one entry per finished export (name `Export completed` / `Export failed`, the message above
+as its overview, `Export completed`/`Export failed` as its type, severity Information/Error).
+Delivery failures are logged and swallowed, so a broken activity database can never fail an export.
+
+### API
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /JellyfinExporter/Jobs?status=&limit=` | Jobs plus counts, history limit, history file path and storage errors. `status` accepts `queued`, `running`, `completed`, `failed`, `cancelled`, `active` and `finished`, comma separated. |
+| `POST /JellyfinExporter/Jobs/{id}/cancel` | Cancel a queued or running job (404 unknown, 409 already finished). |
+| `POST /JellyfinExporter/Jobs/{id}/retry` | Queue a finished job again with the same snapshot (409 when the job is still active or an identical job is already queued). |
+
+All three require an administrator. Job ids are accepted with or without dashes.
+
 ## Requirements
 
 | Component | Version |
@@ -215,6 +273,30 @@ Two operational notes:
 - Jellyfin downloads `versions[].sourceUrl` directly and rejects anything that is not a `.zip`;
   `scripts/update_manifest.py` points it at the GitHub release asset, not the repository page.
 
+## Verify the status page and notifications
+
+`scripts/verify-status.sh [port]` builds and packages the current checkout, serves the zip from a
+local manifest, and drives a throwaway `jellyfin/jellyfin:12.4` container through the whole feature:
+
+- seeds a finished job in `jobs.json` and proves it comes back after a restart (with a Guid in the
+  undashed form Jellyfin writes);
+- retries it, watches `GET /JellyfinExporter/Jobs` report progress above 0% while FFmpeg runs, and
+  checks the completed job lands in the history with an output path that exists in the container;
+- asserts the `Export completed: … -> path` activity entry;
+- forces a real FFmpeg failure by exporting into a 2 MB tmpfs and asserts the error text and the
+  `Export failed: … — FFmpeg exited with code 228 …` activity entry;
+- proves a job that was running when the server stopped is recorded as failed;
+- runs `scripts/verify-status-ui.js` in Chromium against the same container: the settings page shows
+  the history limit, the status page renders the history, a retry shows a progress bar that
+  advances, the completion banner appears, and the dashboard Activity page shows both notifications.
+
+```bash
+PORT=18110 bash scripts/verify-status.sh 18110     # RUN_UI=0 skips the browser checks
+```
+
+The browser checks need `playwright-core` and a cached Chromium; override the module location with
+`NODE_PATH` and the binary with `CHROME`.
+
 ## Layout
 
 ```
@@ -224,6 +306,7 @@ src/Jellyfin.Plugin.Exporter/
   Plugin.cs                               BasePlugin<PluginConfiguration> + IHasWebPages
   Api/ExporterProfilesController.cs       profile validation endpoints for the settings page
   Api/ExporterLibraryController.cs        browse/plan/enqueue endpoints for the Exporter page
+  Api/ExporterJobsController.cs           job status/cancel/retry endpoints for the status page
   Configuration/PluginConfiguration.cs    persisted settings
   Configuration/PluginConfigurationValidator.cs  save-time rules (names, default, limits)
   Configuration/ExportProfileEligibility.cs      "may this profile queue work right now?"
@@ -235,6 +318,9 @@ src/Jellyfin.Plugin.Exporter/
   Services/ExportQueueWorker.cs           background worker that runs FFmpeg
   Services/MediaTreeExpansion.cs          series/season -> episode expansion rules
   Services/ExportSelectionPlanner.cs      job building + already-queued guard
+  Services/IExportJobStore.cs             durable job-history contract
+  Services/JsonExportJobStore.cs          jobs.json in the plugin data folder (atomic writes)
+  Services/ExportNotifications.cs         activity-log notifications + exactly-once listener
   Services/JellyfinMediaTreeSource.cs     ILibraryManager adapter for the browser
   Services/ExporterServiceRegistrator.cs  plugin DI registrations
   Web/configPage.html                     embedded settings page (profile editor)

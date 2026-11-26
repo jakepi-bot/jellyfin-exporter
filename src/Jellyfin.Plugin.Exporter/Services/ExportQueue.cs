@@ -12,40 +12,97 @@ namespace Jellyfin.Plugin.Exporter.Services;
 /// page reads. Thread safe; subscribers get copies and cannot break the queue.
 /// </summary>
 /// <remarks>
-/// The status dashboard task extends this class with JSON persistence in the
-/// plugin data folder; keep the worker-facing methods
-/// (<see cref="TryBegin"/>, <see cref="ReportProgress"/>, <see cref="Complete"/>,
-/// <see cref="Fail"/>, <see cref="MarkCancelled"/>) as the only mutation path so
-/// persistence sees exactly one event per transition.
+/// The worker-facing methods (<see cref="TryBegin"/>, <see cref="ReportProgress"/>,
+/// <see cref="Complete"/>, <see cref="Fail"/>, <see cref="MarkCancelled"/>) are
+/// the only mutation path, so persistence and status events see exactly one
+/// change per transition. When a store is supplied, a snapshot of the job list
+/// is written after every transition and restored on construction.
 /// </remarks>
 public class ExportQueue : IExportQueue
 {
     /// <summary>Default number of finished jobs kept for the status page.</summary>
     public const int DefaultRetentionLimit = 200;
 
+    /// <summary>Highest history limit accepted, so a bad setting cannot grow the file without bound.</summary>
+    public const int MaxRetentionLimit = 5000;
+
+    /// <summary>Error recorded for a job that was still running when the server stopped.</summary>
+    public const string InterruptedMessage =
+        "The Jellyfin server restarted while this export was running, so the export was interrupted. Queue it again to finish it.";
+
     private readonly object _gate = new();
+    private readonly object _persistGate = new();
     private readonly List<ExportJob> _jobs = new();
     private readonly Dictionary<Guid, CancellationTokenSource> _cancellations = new();
-    private readonly int _retentionLimit;
+    private readonly Func<int> _retentionLimitProvider;
+    private readonly IExportJobStore? _store;
+    private long _version;
+    private long _persistedVersion;
 
     /// <summary>
-    /// Creates the queue with the default retention window. Present as its own
-    /// constructor because the server's dependency-injection container resolves
-    /// only parameterless constructors.
+    /// Creates the queue with the default retention window and no persistence.
+    /// Present as its own constructor because the server's dependency-injection
+    /// container resolves only parameterless constructors.
     /// </summary>
     public ExportQueue()
-        : this(DefaultRetentionLimit)
+        : this(() => DefaultRetentionLimit, null)
     {
     }
 
     /// <summary>
-    /// Creates the queue.
+    /// Creates the queue with a fixed retention window and no persistence.
     /// </summary>
     /// <param name="retentionLimit">How many finished jobs to keep; at least 1.</param>
     public ExportQueue(int retentionLimit)
+        : this(() => retentionLimit, null)
     {
-        _retentionLimit = Math.Max(1, retentionLimit);
     }
+
+    /// <summary>
+    /// Creates the queue, restoring whatever the store already holds.
+    /// </summary>
+    /// <param name="retentionLimitProvider">
+    /// Resolves the retention window on every prune, so a settings change takes
+    /// effect without a restart.
+    /// </param>
+    /// <param name="store">Durable history, or null for an in-memory queue.</param>
+    public ExportQueue(Func<int> retentionLimitProvider, IExportJobStore? store)
+    {
+        _retentionLimitProvider = retentionLimitProvider ?? (() => DefaultRetentionLimit);
+        _store = store;
+        Restore();
+    }
+
+    /// <summary>
+    /// Gets the number of finished jobs that are kept for the status page.
+    /// </summary>
+    public int RetentionLimit
+    {
+        get
+        {
+            int configured;
+            try
+            {
+                configured = _retentionLimitProvider();
+            }
+            catch (Exception)
+            {
+                return DefaultRetentionLimit;
+            }
+
+            return Math.Clamp(configured, 1, MaxRetentionLimit);
+        }
+    }
+
+    /// <summary>
+    /// Gets the path the job history is stored at, or null for an in-memory queue.
+    /// </summary>
+    public string? StorageLocation => _store?.Location;
+
+    /// <summary>
+    /// Gets the last persistence problem, or null when the history is healthy.
+    /// </summary>
+    public string? StorageError => _store?.LastError;
 
     /// <inheritdoc />
     public event EventHandler<ExportJobStatusChangedEventArgs>? JobStatusChanged;
@@ -93,11 +150,20 @@ public class ExportQueue : IExportQueue
             }
 
             PruneLocked();
+            if (added.Count > 0)
+            {
+                _version++;
+            }
         }
 
         foreach (var (job, previous) in transitions)
         {
             Raise(job, previous);
+        }
+
+        if (transitions.Count > 0)
+        {
+            Persist();
         }
 
         return added;
@@ -135,6 +201,7 @@ public class ExportQueue : IExportQueue
                 job.Status = ExportJobStatus.Cancelled;
                 job.FinishedAt = DateTimeOffset.UtcNow;
                 job.ErrorMessage = "Cancelled before the export started.";
+                _version++;
             }
             else if (!_cancellations.TryGetValue(jobId, out var cancellation))
             {
@@ -150,6 +217,7 @@ public class ExportQueue : IExportQueue
         }
 
         Raise(target, previous);
+        Persist();
         return true;
     }
 
@@ -184,9 +252,11 @@ public class ExportQueue : IExportQueue
             claimed = found;
             job = found.Clone();
             cancellationToken = source.Token;
+            _version++;
         }
 
         Raise(claimed, ExportJobStatus.Queued);
+        Persist();
         return true;
     }
 
@@ -277,17 +347,20 @@ public class ExportQueue : IExportQueue
 
             target = job;
             PruneLocked();
+            _version++;
         }
 
         Raise(target, previous);
+        Persist();
     }
 
     private ExportJob? Find(Guid jobId) => _jobs.FirstOrDefault(job => job.Id == jobId);
 
     private void PruneLocked()
     {
+        var limit = RetentionLimit;
         var terminal = _jobs.Where(job => job.IsTerminal).ToList();
-        if (terminal.Count <= _retentionLimit)
+        if (terminal.Count <= limit)
         {
             return;
         }
@@ -296,12 +369,120 @@ public class ExportQueue : IExportQueue
         // bounds the history the status page shows.
         var removable = terminal
             .OrderBy(job => job.FinishedAt ?? job.CreatedAt)
-            .Take(terminal.Count - _retentionLimit)
+            .Take(terminal.Count - limit)
             .ToList();
 
         foreach (var job in removable)
         {
             _jobs.Remove(job);
+        }
+    }
+
+    /// <summary>
+    /// Reloads the job history from the store. A job that was running when the
+    /// server stopped cannot be resumed (its FFmpeg process is gone and the
+    /// partial file was abandoned), so it is recorded as failed with an
+    /// explanation instead of sitting in the running state forever. Queued jobs
+    /// stay queued and the worker picks them up again.
+    /// </summary>
+    /// <remarks>
+    /// No status events are raised while restoring: notifications for exports
+    /// that were interrupted before the restart are not delivered after it, so a
+    /// history cannot produce a burst of alerts on boot.
+    /// </remarks>
+    private void Restore()
+    {
+        if (_store is null)
+        {
+            return;
+        }
+
+        IReadOnlyList<ExportJob> loaded;
+        try
+        {
+            loaded = _store.Load();
+        }
+        catch (Exception)
+        {
+            return;
+        }
+
+        if (loaded.Count == 0)
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            foreach (var job in loaded)
+            {
+                if (job is null || job.Id == Guid.Empty || _jobs.Any(existing => existing.Id == job.Id))
+                {
+                    continue;
+                }
+
+                if (job.CreatedAt == default)
+                {
+                    job.CreatedAt = DateTimeOffset.UtcNow;
+                }
+
+                if (job.Status == ExportJobStatus.Running)
+                {
+                    job.Status = ExportJobStatus.Failed;
+                    job.ErrorMessage = InterruptedMessage;
+                    job.FinishedAt = DateTimeOffset.UtcNow;
+                }
+                else if (job.Status == ExportJobStatus.Queued)
+                {
+                    job.ProgressPercent = 0;
+                }
+                else if (job.Status == ExportJobStatus.Completed && job.ProgressPercent < 100)
+                {
+                    job.ProgressPercent = 100;
+                }
+
+                _jobs.Add(job);
+            }
+
+            PruneLocked();
+            _version++;
+        }
+
+        Persist();
+    }
+
+    /// <summary>
+    /// Writes the current job list through the store. Called after every
+    /// transition, outside the queue lock. A write that was overtaken by a newer
+    /// transition is skipped so an older snapshot can never win.
+    /// </summary>
+    private void Persist()
+    {
+        if (_store is null)
+        {
+            return;
+        }
+
+        List<ExportJob> snapshot;
+        long version;
+        lock (_gate)
+        {
+            snapshot = _jobs.Select(job => job.Clone()).ToList();
+            version = _version;
+        }
+
+        lock (_persistGate)
+        {
+            if (version <= _persistedVersion)
+            {
+                return;
+            }
+
+            _store.Save(snapshot);
+            if (_store.LastError is null)
+            {
+                _persistedVersion = version;
+            }
         }
     }
 

@@ -52,6 +52,15 @@ public static class PluginConfigurationValidator
                 $"Max concurrent exports must be between 1 and {PluginConfiguration.MaxConcurrentExportsLimit}."));
         }
 
+        if (configuration.JobHistoryLimit < 1 ||
+            configuration.JobHistoryLimit > PluginConfiguration.JobHistoryLimitMaximum)
+        {
+            issues.Add(new ConfigurationIssue(
+                null,
+                nameof(PluginConfiguration.JobHistoryLimit),
+                $"Job history must keep between 1 and {PluginConfiguration.JobHistoryLimitMaximum} finished jobs."));
+        }
+
         var profiles = configuration.Profiles ?? new List<ExportProfile>();
         var seenIds = new HashSet<Guid>();
         var seenNames = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
