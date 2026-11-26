@@ -4,10 +4,11 @@ A Jellyfin plugin that exports movies, shows and seasons to a directory you cont
 Jellyfin's own FFmpeg (hardware acceleration when the server has it) and named export profiles
 that choose codec, resolution and audio channels.
 
-**Status: 0.2.0.0.** The plugin installs, ships a working export-profile editor in the dashboard
-settings, validates profile names and output directories server-side, and persists profiles
-across restarts. The export engine, browse UI and status dashboard land in follow-up changes on
-top of this skeleton.
+**Status: 0.3.0.0.** The plugin installs, ships a working export-profile editor in the dashboard
+settings, and now has a real export engine: a background worker drains the job queue, runs
+Jellyfin's own FFmpeg one process per job (hardware encoding when the server has it), writes the
+documented Movies/TV layout, reports progress, captures FFmpeg errors, and leaves no partial files
+behind. The browse UI and the status dashboard land in follow-up changes.
 
 ## Export profiles
 
@@ -33,6 +34,68 @@ probe the directory (`POST /JellyfinExporter/Profiles/Validate` and
 directory is absolute, is a directory (or creatable) and accepts a probe file, because the export
 would otherwise fail after encoding. `POST /Plugins/{id}/Configuration` runs the same checks
 again, so the API cannot store a profile the exporter could not use.
+
+## Export engine
+
+Every queued job is one media item exported with one profile. A background worker
+(`Services/ExportQueueWorker`) drains `IExportQueue`, runs at most `MaxConcurrentExports`
+processes (1-8, read from the live configuration on every poll), and records progress and the
+terminal state on the job.
+
+What each job does:
+
+1. Resolve the Jellyfin item and its file on disk. A missing file or a virtual item fails the job
+   with a readable message instead of starting FFmpeg.
+2. `ffprobe` the file: dimensions, duration and whether it has audio. The real video stream is
+   used, so embedded cover art never decides the output size.
+3. Build the command from the job's profile snapshot (see the table below).
+4. Encode into a hidden `.partial` file in the destination folder, parse
+   `-progress pipe:1` into percentages, and rename it to the final name only when FFmpeg exits 0.
+   A cancelled or failed export deletes the partial file, so a half-written file never appears
+   under the finished name.
+
+### FFmpeg, codecs and hardware acceleration
+
+The binary always comes from Jellyfin's `IMediaEncoder.EncoderPath`/`ProbePath`; nothing is
+bundled or hardcoded. Hardware acceleration is chosen with `IMediaEncoder.SupportsHwaccel` and
+`IMediaEncoder.SupportsEncoder`, plus a real one-frame test encode: FFmpeg advertises hwaccels it
+cannot use on the current machine (a container with no GPU still lists `cuda`), so the advertised
+list alone would make every export fail. The family configured in Jellyfin's own encoding
+settings is tried first, then CUDA, VA-API, QSV and VideoToolbox in that order; the first family
+that passes the test encode wins, otherwise the exporter uses software encoding. Detection runs
+once per server process and is logged (for example `cuda hardware encoding` or
+`software encoding`), and `GET /JellyfinExporter/Engine` (admin only) reports the resolved path,
+family and `libsvtav1` availability.
+
+| Profile | Software encoder | Hardware encoder (nvenc / qsv / vaapi / videotoolbox) |
+| --- | --- | --- |
+| H.264 | `libx264 -preset medium -crf 20 -profile:v high` | `h264_nvenc` / `h264_qsv` / `h264_vaapi` / `h264_videotoolbox` |
+| H.265 | `libx265 -preset medium -crf 24` | `hevc_nvenc` / `hevc_qsv` / `hevc_vaapi` / `hevc_videotoolbox` |
+| AV1 | `libsvtav1 -preset 8 -crf 32` (or `libaom-av1` when SVT is absent) | `av1_nvenc` / `av1_qsv` / `av1_vaapi` (VideoToolbox has no AV1 encoder, so AV1 stays software there) |
+
+Video is `-map 0:v:0` and scaled with `-vf scale=W:H` to fit the profile's box while preserving
+aspect ratio, without upscaling (a 1080p source exported at 4K stays 1080p) and with even
+dimensions. Audio is `-map 0:a?` plus:
+
+| Audio channels | FFmpeg arguments |
+| --- | --- |
+| Original | `-c:a copy` |
+| 5.1 | `-c:a aac -ac 6 -b:a 384k` |
+| Stereo | `-c:a aac -ac 2 -b:a 192k` |
+
+The container is always Matroska (`.mkv`). Matroska holds every codec these profiles produce and
+every audio codec "Original" may copy (`DTS-HD`, `TrueHD`, `FLAC`, ...), so an export cannot fail
+because the container rejects the source audio track.
+
+Reference target bitrates, used for encoders that are bitrate-driven and as the documented
+per-codec guidance: 4K 15M/10M/8M, 1080p 6M/4M/3M, 720p 3M/2M/1500k, 480p 1500k/1M/800k
+(H.264/H.265/AV1).
+
+### Cancellation and failures
+
+`POST /Jobs/{id}/cancel` (or a server shutdown) cancels the job's token; the worker kills the
+FFmpeg process tree, deletes the partial file and marks the job `Cancelled`. A non-zero FFmpeg
+exit marks the job `Failed` with the last 2000 characters of stderr as the error message.
 
 ## Requirements
 
@@ -66,9 +129,16 @@ restart. The zip contains `Jellyfin.Plugin.Exporter.dll`, `meta.json` and `plugi
 ```bash
 export PATH="$HOME/.dotnet:$PATH"    # .NET 10 SDK
 dotnet build -c Release
-dotnet test -c Release               # configuration round-trip + validation rules
+dotnet test -c Release               # unit tests + real-FFmpeg export tests
 python3 scripts/package.py           # artifacts/jellyfin-exporter_<version>.zip
 ```
+
+`dotnet test` covers the layout contract, command builder (every codec, resolution and audio
+mode, plus CUDA/VA-API/QSV/VideoToolbox argument shapes), progress parsing, queue and worker
+behavior, and real exports through the system FFmpeg: a movie, an episode, a whole season, all
+four resolutions, all three audio modes, AV1, de-duplication, an induced FFmpeg failure and a
+cancellation. Tests that need FFmpeg return early when `/usr/bin/ffmpeg` is absent. Set
+`FFMPEG_PATH`/`FFPROBE_PATH` to test another build.
 
 `scripts/package.py` reads `<Version>` and `<JellyfinTargetAbi>` from `Directory.Build.props`,
 publishes the project, and stamps both values into the `meta.json` and `plugin.xml` inside the
@@ -126,7 +196,8 @@ src/Jellyfin.Plugin.Exporter/
   Configuration/PluginConfigurationValidator.cs  save-time rules (names, default, limits)
   Configuration/OutputDirectoryInspector.cs      "is this directory writable?" probe
   Models/                                 shared domain models (see below)
-  Services/                               IExportQueue contract + DI registrator
+  Export/                                 export engine: layout, FFmpeg builder, probe, runner
+  Services/                               queue, queue worker, item/FFmpeg resolution, DI registrator
   Web/configPage.html                     embedded settings page (profile editor)
   meta.json, plugin.xml                   install metadata stamped into the zip
 tests/Jellyfin.Plugin.Exporter.Tests/     xunit tests: XML/JSON round-trip + validation rules
@@ -151,6 +222,14 @@ compile against one definition.
 | `ExportJob` | `Id`, `JellyfinItemId`, `ItemName`, `ItemType`, `ProfileId`, `ProfileName`, `Status`, `ProgressPercent`, `OutputPath`, `ErrorMessage`, `CreatedAt`, `StartedAt`, `FinishedAt`, plus a snapshot of `Format`, `Resolution`, `AudioChannels`, `OutputDirectory` |
 | `ExportJobStatus` | `Queued`, `Running`, `Completed`, `Failed`, `Cancelled` |
 | `IExportQueue` | `event JobStatusChanged`, `Enqueue(IEnumerable<ExportJob>)`, `GetJobs()`, `Cancel(Guid)` |
+| `ExportQueue` | in-memory implementation + worker-facing transitions (`TryBegin`, `ReportProgress`, `Complete`, `Fail`, `MarkCancelled`) |
+| `ExportItemInfo` | `SourcePath`, `Title`, `Year`, `ShowName`, `SeasonNumber`, `EpisodeNumber`, `IsEpisode` |
+| `IExportItemResolver` | Jellyfin item -> `ExportItemInfo` (`LibraryExportItemResolver`) |
+| `IExportEngine` | `RunAsync(ExportJob, ExportItemInfo, Action<double>?, CancellationToken)` -> `ExportRunResult` |
+| `IFfmpegLocator` | `Locate()` -> `FfmpegLocation` (`EncoderPath`, `ProbePath`, `HwAccel`, `SvtAv1Available`) |
+| `OutputLayout` | layout contract + name sanitizing + de-duplication |
+| `FfmpegCommandBuilder` | profile snapshot + probe -> argv list (codec, resolution, audio, hwaccel) |
+| `MediaProbeInfo` | ffprobe facts: video codec, dimensions, duration, audio codec/channels |
 
 Notes:
 
@@ -168,6 +247,18 @@ Notes:
 <OutputDirectory>/Movies/{Movie Title} ({Year})/{Movie Title} ({Year}).{ext}
 <OutputDirectory>/TV/{Show Name}/Season {NN}/{NN} - {Episode Name}.{ext}
 ```
+
+- `{ext}` is always `mkv`; the container is Matroska for every profile.
+- The year is dropped when Jellyfin has none: `Movies/{Title}/{Title}.mkv`.
+- Season and episode numbers are zero padded to two digits (`Season 02`, `03 - Pilot`).
+- Characters that are unsafe in a file name (`< > : " / \ | ? *`) and control characters become
+  `-`, whitespace collapses, leading/trailing dots and spaces are trimmed, names are capped at
+  120 characters, and an empty title falls back to `Untitled`.
+- A name that already exists is de-duplicated with a counter before the extension:
+  `The Movie (2020) (1).mkv`. Concurrent jobs reserve their path before encoding, so two exports
+  cannot write the same file.
+- The file is written as `.{name}.{jobId}.partial` in its destination folder and renamed into
+  place only after FFmpeg exits 0.
 
 ## License
 
