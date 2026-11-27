@@ -9,6 +9,14 @@
     "imageUrl": "",
     "versions": [
       {
+        "version": "0.7.0.0",
+        "changelog": "release: bump version to 0.7.0.0",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/jakepi-bot/jellyfin-exporter/releases/download/v0.7.0.0/jellyfin-exporter_0.7.0.0.zip",
+        "checksum": "e4c9c48651fa7e4267254f6ec1bbb5db",
+        "timestamp": "2026-11-27T12:42:04Z"
+      },
+      {
         "version": "0.6.0.0",
         "changelog": "release: bump version to 0.6.0.0",
         "targetAbi": "12.4.0.0",
