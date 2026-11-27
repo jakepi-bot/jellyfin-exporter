@@ -9,6 +9,14 @@
     "imageUrl": "",
     "versions": [
       {
+        "version": "0.6.0.0",
+        "changelog": "release: bump version to 0.6.0.0",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/jakepi-bot/jellyfin-exporter/releases/download/v0.6.0.0/jellyfin-exporter_0.6.0.0.zip",
+        "checksum": "57b82a2e71257f87953f22495728d7a4",
+        "timestamp": "2026-11-27T02:04:19Z"
+      },
+      {
         "version": "0.5.1.0",
         "changelog": "Remove empty folders left by failed and cancelled exports, and show the validator message after a rejected save",
         "targetAbi": "12.4.0.0",
