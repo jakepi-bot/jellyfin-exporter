@@ -22,8 +22,16 @@ public class ExportEngineTests
 
     private static bool SvtAv1Available() => TestMedia.Available && TestMedia.HasEncoder("libsvtav1");
 
-    private static ExportEngine NewEngine(IFfmpegLocator? locator = null) =>
-        new(locator ?? SoftwareLocator, new PathReservationRegistry(), NullLogger<ExportEngine>.Instance);
+    private static ExportEngine NewEngine(
+        IFfmpegLocator? locator = null,
+        PathReservationRegistry? reservations = null) =>
+        new(locator ?? SoftwareLocator, reservations ?? new PathReservationRegistry(), NullLogger<ExportEngine>.Instance);
+
+    private static FixedLocator FailingByHardwarePlan() => new(new FfmpegLocation(
+        TestMedia.FfmpegPath,
+        TestMedia.FfprobePath,
+        new HwAccelPlan(HwAccelKind.Cuda),
+        SvtAv1Available()));
 
     private static ExportJob Job(
         string outputDirectory,
@@ -377,6 +385,47 @@ public class ExportEngineTests
         Assert.Equal("another job's export", File.ReadAllText(finished));
         Assert.Equal(new[] { finished }, Directory.GetFiles(destination));
         Assert.Empty(PartialFiles(output));
+    }
+
+    [Fact]
+    public async Task AFailingExport_KeepsTheSeasonFolderARunningSiblingHasReserved()
+    {
+        if (!TestMedia.Available)
+        {
+            return;
+        }
+
+        using var directory = new TestMedia.TempDirectory();
+        var source = TestMedia.CreateSource(directory.Path, "gpu-reserved", 640, 360, 2, seconds: 1);
+        var output = directory.Combine("exports");
+        var season = Path.Combine(output, "TV", "Shared Season Show", "Season 01");
+
+        // A sibling job already reserved its file in this season folder and is
+        // encoding it, so the folder must survive this job's failure even though
+        // it is still empty on disk.
+        var reservations = new PathReservationRegistry();
+        var siblingPath = reservations.ReserveUnique(Path.Combine(season, "01 - Sibling.mkv"));
+        File.WriteAllText(Path.Combine(directory.Path, "keep.txt"), "not used");
+
+        var result = await NewEngine(FailingByHardwarePlan(), reservations).RunAsync(
+            Job(output, ExportFormat.H264, ExportResolution.Resolution480p, ExportAudioChannels.Stereo),
+            ExportItemInfo.ForEpisode(source, "Shared Season Show", 1, 2, "Failing Episode"),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(ExportJobStatus.Failed, result.Outcome);
+        Assert.True(Directory.Exists(season));
+
+        // Once the sibling lets go of the folder, cleanup keeps working as before.
+        reservations.Release(siblingPath);
+        var other = await NewEngine(FailingByHardwarePlan(), reservations).RunAsync(
+            Job(output, ExportFormat.H264, ExportResolution.Resolution480p, ExportAudioChannels.Stereo),
+            ExportItemInfo.ForEpisode(source, "Other Show", 1, 2, "Failing Episode"),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(ExportJobStatus.Failed, other.Outcome);
+        Assert.False(Directory.Exists(Path.Combine(output, "TV", "Other Show")));
     }
 
     [Fact]

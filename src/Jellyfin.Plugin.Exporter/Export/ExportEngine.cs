@@ -166,14 +166,14 @@ public sealed class ExportEngine : IExportEngine
 
             if (result.Outcome != ExportJobStatus.Completed)
             {
-                PruneCreatedDirectories(job.Id, createdDirectories);
+                PruneCreatedDirectories(job.Id, createdDirectories, finalPath);
             }
 
             return result;
         }
         catch
         {
-            PruneCreatedDirectories(job.Id, createdDirectories);
+            PruneCreatedDirectories(job.Id, createdDirectories, finalPath);
             throw;
         }
         finally
@@ -185,16 +185,24 @@ public sealed class ExportEngine : IExportEngine
     /// <summary>
     /// Removes the empty folder skeleton a job created before it stopped, so a
     /// failed or cancelled export leaves the output tree as it was. A folder
-    /// holding another job's file is never removed.
+    /// holding another job's file is never removed, and neither is a folder
+    /// another queued or running job has already reserved a file in: it is
+    /// empty only because that job has not written its first byte yet, and
+    /// deleting it made the sibling export fail with "No such file or directory".
     /// </summary>
-    private void PruneCreatedDirectories(Guid jobId, IReadOnlyList<string> createdDirectories)
+    /// <param name="jobId">Job whose cleanup this is.</param>
+    /// <param name="createdDirectories">Deepest-first folders the job created.</param>
+    /// <param name="finalPath">The job's own output path (reserved until the finally block).</param>
+    private void PruneCreatedDirectories(Guid jobId, IReadOnlyList<string> createdDirectories, string finalPath)
     {
         if (createdDirectories.Count == 0)
         {
             return;
         }
 
-        var removed = OutputTreeCleanup.PruneEmptyDirectories(createdDirectories);
+        var removed = OutputTreeCleanup.PruneEmptyDirectories(
+            createdDirectories,
+            directory => _reservations.IsReservedInside(directory, finalPath));
         if (removed.Count > 0)
         {
             _logger.LogDebug(

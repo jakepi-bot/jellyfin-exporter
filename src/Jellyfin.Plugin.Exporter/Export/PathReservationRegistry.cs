@@ -51,6 +51,55 @@ public sealed class PathReservationRegistry
     }
 
     /// <summary>
+    /// Reports whether another job currently holds a reservation inside
+    /// <paramref name="directory"/>, so cleanup never removes a folder a
+    /// sibling export is about to write into.
+    /// </summary>
+    /// <param name="directory">Folder about to be removed.</param>
+    /// <param name="exceptPath">The caller's own reserved path, if any.</param>
+    /// <returns><c>true</c> when a different job's reservation lives in the folder.</returns>
+    public bool IsReservedInside(string directory, string? exceptPath = null)
+    {
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            return false;
+        }
+
+        var folder = Path.GetFullPath(directory);
+        var own = string.IsNullOrWhiteSpace(exceptPath) ? null : Path.GetFullPath(exceptPath);
+        lock (_gate)
+        {
+            foreach (var reserved in _reserved)
+            {
+                if (own is not null && string.Equals(reserved, own, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (IsInside(reserved, folder))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsInside(string path, string folder)
+    {
+        if (string.Equals(path, folder, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        var relative = Path.GetRelativePath(folder, path);
+        return !Path.IsPathRooted(relative)
+            && !string.Equals(relative, "..", StringComparison.Ordinal)
+            && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Releases a reservation. Called when the job finishes, fails or is
     /// cancelled; a completed export is protected by the file on disk.
     /// </summary>

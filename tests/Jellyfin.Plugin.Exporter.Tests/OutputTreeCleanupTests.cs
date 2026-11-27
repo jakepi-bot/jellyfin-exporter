@@ -102,6 +102,54 @@ public class OutputTreeCleanupTests
     }
 
     [Fact]
+    public void PruneEmptyDirectories_KeepsAFolderAnotherRunningJobHasReserved()
+    {
+        using var directory = new TestMedia.TempDirectory();
+        var root = directory.Combine("exports");
+        var target = Path.Combine(root, "TV", "Show", "Season 01");
+        var created = OutputTreeCleanup.CreateTrackedDirectory(target, root);
+
+        // The season folder looks empty because the sibling job has reserved its
+        // file but has not written a byte yet; deleting it breaks that export.
+        var removed = OutputTreeCleanup.PruneEmptyDirectories(
+            created,
+            folder => string.Equals(folder, target, StringComparison.Ordinal));
+
+        Assert.Empty(removed);
+        Assert.All(created, folder => Assert.True(Directory.Exists(folder)));
+    }
+
+    [Fact]
+    public void PruneEmptyDirectories_RemovesTheChainWhenTheGuardFindsNothingInUse()
+    {
+        using var directory = new TestMedia.TempDirectory();
+        var root = directory.Combine("exports");
+        var target = Path.Combine(root, "TV", "Show", "Season 01");
+        var created = OutputTreeCleanup.CreateTrackedDirectory(target, root);
+
+        var removed = OutputTreeCleanup.PruneEmptyDirectories(created, _ => false);
+
+        Assert.Equal(created, removed);
+        Assert.False(Directory.Exists(root));
+    }
+
+    [Fact]
+    public void PruneEmptyDirectories_TreatsAFailingGuardAsInUse()
+    {
+        using var directory = new TestMedia.TempDirectory();
+        var root = directory.Combine("exports");
+        var target = Path.Combine(root, "TV", "Show", "Season 01");
+        var created = OutputTreeCleanup.CreateTrackedDirectory(target, root);
+
+        var removed = OutputTreeCleanup.PruneEmptyDirectories(
+            created,
+            _ => throw new InvalidOperationException("guard boom"));
+
+        Assert.Empty(removed);
+        Assert.True(Directory.Exists(target));
+    }
+
+    [Fact]
     public void CreateTrackedDirectory_RefusesAPathOutsideTheOutputDirectory()
     {
         using var directory = new TestMedia.TempDirectory();

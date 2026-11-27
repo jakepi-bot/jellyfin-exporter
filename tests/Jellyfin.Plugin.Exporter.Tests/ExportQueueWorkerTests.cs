@@ -96,7 +96,11 @@ public class ExportQueueWorkerTests
         await RunWorkerAsync(worker, async () =>
         {
             await WaitUntilAsync(() => queue.GetJobs().Count(j => j.Status == ExportJobStatus.Running) == 2, "two running jobs");
-            await Task.Delay(400);
+
+            // The status flips before the engine is entered, so wait for both
+            // invocations instead of sleeping a fixed 400 ms: on a loaded CI box
+            // that sleep could expire before the second job reached the engine.
+            await WaitUntilAsync(() => engine.PeakConcurrency == 2, "both engine invocations to start");
 
             Assert.Equal(2, queue.GetJobs().Count(j => j.Status == ExportJobStatus.Running));
             Assert.Equal(2, queue.GetJobs().Count(j => j.Status == ExportJobStatus.Queued));

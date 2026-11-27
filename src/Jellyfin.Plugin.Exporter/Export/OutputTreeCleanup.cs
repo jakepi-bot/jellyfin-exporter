@@ -53,12 +53,20 @@ public static class OutputTreeCleanup
     /// first, stopping at the first one that is no longer empty.
     /// </summary>
     /// <param name="createdDirectories">Deepest-first list from <see cref="CreateTrackedDirectory"/>.</param>
+    /// <param name="isInUse">
+    /// Optional check for a folder another export is about to write into. An
+    /// empty folder can still be claimed by a sibling job that has reserved its
+    /// output path but has not created the file yet, which is exactly the window
+    /// where removing it breaks that job.
+    /// </param>
     /// <returns>The folders that were removed.</returns>
     /// <remarks>
     /// A concurrent export writing into one of these folders makes it non-empty,
     /// which stops the walk; a folder deleted in the meantime is skipped.
     /// </remarks>
-    public static IReadOnlyList<string> PruneEmptyDirectories(IEnumerable<string> createdDirectories)
+    public static IReadOnlyList<string> PruneEmptyDirectories(
+        IEnumerable<string> createdDirectories,
+        Func<string, bool>? isInUse = null)
     {
         ArgumentNullException.ThrowIfNull(createdDirectories);
 
@@ -80,6 +88,13 @@ public static class OutputTreeCleanup
                 if (!IsEmpty(path))
                 {
                     // A parent cannot be empty while its child folder exists.
+                    break;
+                }
+
+                if (isInUse is not null && SafeInUse(isInUse, path))
+                {
+                    // Another job reserved a file here: keep the folder and
+                    // therefore every ancestor, even though it looks empty now.
                     break;
                 }
 
@@ -145,6 +160,20 @@ public static class OutputTreeCleanup
         return !Path.IsPathRooted(relative)
             && !string.Equals(relative, "..", StringComparison.Ordinal)
             && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
+    }
+
+    private static bool SafeInUse(Func<string, bool> isInUse, string path)
+    {
+        try
+        {
+            return isInUse(path);
+        }
+        catch (Exception)
+        {
+            // A failing guard must never delete a folder that might belong to
+            // another job, so treat it as "in use".
+            return true;
+        }
     }
 
     private static bool IsEmpty(string path)
