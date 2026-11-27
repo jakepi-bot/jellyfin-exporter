@@ -36,16 +36,22 @@ public class ExporterLibraryController : ControllerBase
 
     private readonly ILibraryManager _libraryManager;
     private readonly IOutputDirectoryInspector _inspector;
+    private readonly ITranscodingSettingsSource? _transcoding;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ExporterLibraryController"/> class.
     /// </summary>
     /// <param name="libraryManager">Server library.</param>
     /// <param name="inspector">Output-directory probe used to reject unusable profiles.</param>
-    public ExporterLibraryController(ILibraryManager libraryManager, IOutputDirectoryInspector inspector)
+    /// <param name="transcoding">Jellyfin's transcoding settings, used to refuse formats Jellyfin disallows.</param>
+    public ExporterLibraryController(
+        ILibraryManager libraryManager,
+        IOutputDirectoryInspector inspector,
+        ITranscodingSettingsSource? transcoding = null)
     {
         _libraryManager = libraryManager;
         _inspector = inspector;
+        _transcoding = transcoding;
     }
 
     private static IMediaTreeSource Tree(ILibraryManager libraryManager) => new JellyfinMediaTreeSource(libraryManager);
@@ -338,7 +344,11 @@ public class ExporterLibraryController : ControllerBase
             return Preparation.Failed(400, "Choose an export profile.");
         }
 
-        var eligibility = ExportProfileEligibility.Evaluate(configuration, profileId.Value, _inspector);
+        var eligibility = ExportProfileEligibility.Evaluate(
+            configuration,
+            profileId.Value,
+            _inspector,
+            _transcoding?.Current);
         if (!eligibility.IsUsable)
         {
             return Preparation.Failed(400, eligibility.ErrorMessage!);

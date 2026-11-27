@@ -111,6 +111,7 @@ public static class ExportSelectionPlanner
         Resolution = profile.Resolution,
         AudioChannels = profile.AudioChannels,
         OutputDirectory = profile.OutputDirectory,
+        UseJellyfinTranscodingSettings = profile.UseJellyfinTranscodingSettings,
         Status = ExportJobStatus.Queued,
         CreatedAt = DateTimeOffset.UtcNow
     };

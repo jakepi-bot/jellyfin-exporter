@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Jellyfin.Plugin.Exporter.Export;
 using Jellyfin.Plugin.Exporter.Models;
 
 namespace Jellyfin.Plugin.Exporter.Configuration;
@@ -29,11 +30,17 @@ public static class ExportProfileEligibility
     /// <param name="configuration">Current plugin configuration.</param>
     /// <param name="profileId">Profile the operator chose.</param>
     /// <param name="inspector">Directory probe; defaults to the real file system.</param>
+    /// <param name="transcoding">
+    /// Jellyfin's current transcoding settings; when given, a profile that
+    /// honours them is refused if Jellyfin's transcoding settings disallow its
+    /// format (HEVC/AV1). Null skips the check.
+    /// </param>
     /// <returns>The profile when usable, otherwise the operator-facing reason.</returns>
     public static ProfileEligibility Evaluate(
         PluginConfiguration? configuration,
         Guid profileId,
-        IOutputDirectoryInspector? inspector = null)
+        IOutputDirectoryInspector? inspector = null,
+        JellyfinTranscodingSettings? transcoding = null)
     {
         if (configuration is null)
         {
@@ -61,7 +68,7 @@ public static class ExportProfileEligibility
         }
 
         var issues = PluginConfigurationValidator
-            .Validate(configuration, inspector)
+            .Validate(configuration, inspector, transcoding)
             .Where(issue => issue.ProfileId == profile.Id)
             .Select(issue => issue.Message)
             .ToArray();

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Jellyfin.Plugin.Exporter.Configuration;
+using Jellyfin.Plugin.Exporter.Export;
 using Jellyfin.Plugin.Exporter.Models;
 using Xunit;
 
@@ -55,6 +56,38 @@ public class ExportProfileEligibilityTests
         Assert.False(result.IsUsable);
         Assert.Contains("disabled", result.ErrorMessage!, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("archive", result.ErrorMessage!);
+    }
+
+    [Fact]
+    public void PlanTime_RefusesAv1WhenJellyfinDisallowsIt()
+    {
+        // The same message the settings page validates at save time; Plan and
+        // Export both refuse to queue the profile.
+        var profile = Profile("Phone copy");
+        profile.Format = ExportFormat.AV1;
+        var transcoding = new JellyfinTranscodingSettings(AllowAv1Encoding: false);
+
+        var result = ExportProfileEligibility.Evaluate(
+            Config(profile), profile.Id, StubInspector.AlwaysValid, transcoding);
+
+        Assert.False(result.IsUsable);
+        Assert.Contains("not usable", result.ErrorMessage!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("AV1", result.ErrorMessage!, StringComparison.Ordinal);
+        Assert.Contains("Use Jellyfin's transcoding settings", result.ErrorMessage!, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PlanTime_AllowsAv1WhenTheProfileOptsOutOfJellyfinSettings()
+    {
+        var profile = Profile("Phone copy");
+        profile.Format = ExportFormat.AV1;
+        profile.UseJellyfinTranscodingSettings = false;
+        var transcoding = new JellyfinTranscodingSettings(AllowAv1Encoding: false);
+
+        var result = ExportProfileEligibility.Evaluate(
+            Config(profile), profile.Id, StubInspector.AlwaysValid, transcoding);
+
+        Assert.True(result.IsUsable);
     }
 
     [Fact]

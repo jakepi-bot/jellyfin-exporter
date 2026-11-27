@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Jellyfin.Plugin.Exporter.Configuration;
+using Jellyfin.Plugin.Exporter.Export;
 using Jellyfin.Plugin.Exporter.Models;
 using Xunit;
 
@@ -49,6 +50,61 @@ public class ConfigurationValidationTests
     {
         // A fresh install has no profiles; the dashboard must still be able to save.
         Assert.Empty(PluginConfigurationValidator.Validate(new PluginConfiguration(), StubInspector.AlwaysValid));
+    }
+
+    [Fact]
+    public void Av1Profile_IsBlockedWhenJellyfinDisallowsAv1()
+    {
+        var profile = Profile("Phone copy");
+        profile.Format = ExportFormat.AV1;
+        var config = Config(profile);
+        var transcoding = new JellyfinTranscodingSettings(AllowAv1Encoding: false);
+
+        var issues = PluginConfigurationValidator.Validate(config, StubInspector.AlwaysValid, transcoding);
+
+        var issue = Assert.Single(issues);
+        Assert.Equal("Format", issue.Field);
+        Assert.Contains("AV1", issue.Message, StringComparison.Ordinal);
+        Assert.Contains("Use Jellyfin's transcoding settings", issue.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Av1Profile_IsAllowedWhenTheProfileOptsOutOfJellyfinSettings()
+    {
+        var profile = Profile("Phone copy");
+        profile.Format = ExportFormat.AV1;
+        profile.UseJellyfinTranscodingSettings = false;
+        var config = Config(profile);
+        var transcoding = new JellyfinTranscodingSettings(AllowAv1Encoding: false);
+
+        Assert.Empty(PluginConfigurationValidator.Validate(config, StubInspector.AlwaysValid, transcoding));
+    }
+
+    [Fact]
+    public void HevcProfile_IsBlockedWhenJellyfinDisallowsHevc()
+    {
+        var profile = Profile("Archive");
+        profile.Format = ExportFormat.H265;
+        var config = Config(profile);
+        var transcoding = new JellyfinTranscodingSettings(AllowHevcEncoding: false);
+
+        var issues = PluginConfigurationValidator.Validate(config, StubInspector.AlwaysValid, transcoding);
+
+        var issue = Assert.Single(issues);
+        Assert.Equal("Format", issue.Field);
+        Assert.Contains("HEVC", issue.Message, StringComparison.Ordinal);
+        Assert.Contains("H.265", issue.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void H264Profile_IsNeverBlockedByTheAllowedCodecs()
+    {
+        var profile = Profile("Archive");
+        profile.Format = ExportFormat.H264;
+        var config = Config(profile);
+        var transcoding = new JellyfinTranscodingSettings(AllowHevcEncoding: false, AllowAv1Encoding: false);
+
+        Assert.Empty(PluginConfigurationValidator.Validate(config, StubInspector.AlwaysValid, transcoding));
     }
 
     [Fact]

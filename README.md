@@ -104,20 +104,36 @@ What each job does:
 
 The binary always comes from Jellyfin's `IMediaEncoder.EncoderPath`/`ProbePath`; nothing is
 bundled or hardcoded. Hardware acceleration is chosen with `IMediaEncoder.SupportsHwaccel` and
-`IMediaEncoder.SupportsEncoder`, plus a real one-frame test encode: FFmpeg advertises hwaccels it
-cannot use on the current machine (a container with no GPU still lists `cuda`), so the advertised
-list alone would make every export fail. The family configured in Jellyfin's own encoding
-settings is tried first, then CUDA, VA-API, QSV and VideoToolbox in that order; the first family
-that passes the test encode wins, otherwise the exporter uses software encoding. Detection runs
-once per server process and is logged (for example `cuda hardware encoding` or
-`software encoding`), and `GET /JellyfinExporter/Engine` (admin only) reports the resolved path,
-family and `libsvtav1` availability.
+`IMediaEncoder.SupportsEncoder`, plus a real one-frame test encode **per exact encoder**: FFmpeg
+advertises hwaccels and encoders the current device cannot run (a UHD 630 lists `av1_vaapi` and
+fails with `No usable encoding profile found`), so verifying only one codec per family let every
+AV1 job in a vaapi plan die with FFmpeg exit 218. Every format is therefore tested with the exact
+name the command builder will use (`h264_vaapi`, `hevc_qsv`, `av1_qsv`, ...) on the configured
+device first — `EncodingOptions.VaapiDevice` for a VA-API plan, `EncodingOptions.QsvDevice` for a
+QSV plan — and then on the render nodes that actually exist in `/dev/dri` (sorted, configured
+device first). A format with no working device falls back to software (`libx264`/`libx265`/
+`libsvtav1`/`libaom-av1`) instead of failing the job; only when no format of a family works does
+the selector move on to the next family. The family configured in Jellyfin's own encoding
+settings is tried first, then CUDA, VA-API, QSV and VideoToolbox in that order. Detection runs
+once per server process, caches each probe per `(device, encoder)`, and is logged (for example
+`vaapi hardware encoding` plus a per-format line), and `GET /JellyfinExporter/Engine` (admin
+only) reports the resolved path, family, `libsvtav1` availability and a `Formats` list with the
+exact encoder and device (or software fallback) for H264/H265/AV1.
 
 | Profile | Software encoder | Hardware encoder (nvenc / qsv / vaapi / videotoolbox) |
 | --- | --- | --- |
 | H.264 | `libx264 -preset medium -crf 20 -profile:v high` | `h264_nvenc` / `h264_qsv` / `h264_vaapi` / `h264_videotoolbox` |
 | H.265 | `libx265 -preset medium -crf 24` | `hevc_nvenc` / `hevc_qsv` / `hevc_vaapi` / `hevc_videotoolbox` |
 | AV1 | `libsvtav1 -preset 8 -crf 32` (or `libaom-av1` when SVT is absent) | `av1_nvenc` / `av1_qsv` / `av1_vaapi` (VideoToolbox has no AV1 encoder, so AV1 stays software there) |
+
+Each profile has a **Use Jellyfin's transcoding settings** toggle (default on). While it is on,
+exports honour Jellyfin's Dashboard > Playback settings: `EnableHardwareEncoding=false` forces
+software encoders for every format, `AllowHevcEncoding`/`AllowAv1Encoding` block those profile
+formats (validated when the settings page saves and refused at plan time with a clear message),
+`EncoderPreset` maps onto each encoder's preset flag unless it is `auto` (the plugin default),
+`H264Crf`/`H265Crf` become the software CRF (AV1 has no Jellyfin CRF knob and keeps the plugin's
+SVT-AV1 settings), and `EncodingThreadCount > 0` adds `-threads N` for software encoding. With
+the toggle off a profile uses the plugin's own encoder settings, exactly as before.
 
 Video is `-map 0:v:0` and scaled with `-vf scale=W:H` to fit the profile's box while preserving
 aspect ratio, without upscaling (a 1080p source exported at 4K stays 1080p) and with even

@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Jellyfin.Plugin.Exporter.Export;
 using Jellyfin.Plugin.Exporter.Services;
 using MediaBrowser.Common.Api;
 using Microsoft.AspNetCore.Authorization;
@@ -9,9 +12,11 @@ namespace Jellyfin.Plugin.Exporter.Api;
 
 /// <summary>
 /// Read-only diagnostics for the export engine: which FFmpeg the plugin
-/// resolved from Jellyfin and which acceleration it will use. Operators and QA
-/// use this to confirm hardware acceleration was detected (or that the server
-/// correctly fell back to software encoding) without running an export.
+/// resolved from Jellyfin, which acceleration it will use, and — per export
+/// format — the exact encoder and device (or the software fallback) the next
+/// job of that format will get. Operators and QA use this to confirm hardware
+/// acceleration was detected per codec (or that the server correctly fell
+/// back to software encoding) without running an export.
 /// </summary>
 [ApiController]
 [Authorize(Policy = Policies.RequiresElevation)]
@@ -19,6 +24,7 @@ namespace Jellyfin.Plugin.Exporter.Api;
 public class ExporterEngineController : ControllerBase
 {
     private readonly IFfmpegLocator? _locator;
+    private readonly ITranscodingSettingsSource? _transcoding;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ExporterEngineController"/>
@@ -32,9 +38,11 @@ public class ExporterEngineController : ControllerBase
     /// Initializes a new instance of the <see cref="ExporterEngineController"/> class.
     /// </summary>
     /// <param name="locator">FFmpeg locator.</param>
-    public ExporterEngineController(IFfmpegLocator locator)
+    /// <param name="transcoding">Jellyfin's transcoding settings, for the hardware-switch note.</param>
+    public ExporterEngineController(IFfmpegLocator locator, ITranscodingSettingsSource? transcoding = null)
     {
         _locator = locator;
+        _transcoding = transcoding;
     }
 
     /// <summary>
@@ -55,6 +63,9 @@ public class ExporterEngineController : ControllerBase
         try
         {
             var location = _locator.Locate();
+            var formats = DescribeFormats(location);
+            var hardwareCount = formats.Count(format => format.Hardware);
+
             return new EngineInfoResponse
             {
                 EncoderPath = location.EncoderPath,
@@ -63,17 +74,79 @@ public class ExporterEngineController : ControllerBase
                 ProbeExists = System.IO.File.Exists(location.ProbePath),
                 HardwareAcceleration = location.HwAccel.FfmpegName,
                 HardwareEncoding = location.HwAccel.IsHardware,
-                VaapiDevice = location.HwAccel.DevicePath,
+                VaapiDevice = location.HwAccel.Kind == HwAccelKind.Vaapi ? location.HwAccel.DevicePath : null,
+                QsvDevice = location.HwAccel.Kind == HwAccelKind.Qsv ? location.HwAccel.DevicePath : null,
                 SvtAv1Available = location.SvtAv1Available,
-                Message = location.HwAccel.IsHardware
-                    ? "Hardware encoding is available and will be used."
-                    : "No usable hardware encoder was detected; exports will use software encoding."
+                Formats = formats,
+                Message = BuildMessage(location, formats, hardwareCount)
             };
         }
         catch (Exception ex)
         {
             return StatusCode(503, new EngineInfoResponse { Message = ex.Message });
         }
+    }
+
+    private static IReadOnlyList<EngineFormatInfo> DescribeFormats(FfmpegLocation location)
+    {
+        return HardwareAccelerationSelector.FormatOrder
+            .Select(format =>
+            {
+                var choice = FfmpegCommandBuilder.ResolveVideoEncoder(
+                    format,
+                    location.HwAccel,
+                    location.SvtAv1Available);
+                return new EngineFormatInfo
+                {
+                    Format = format.ToString(),
+                    Hardware = choice.Hardware,
+                    Encoder = choice.Encoder,
+                    Device = choice.Hardware ? choice.DevicePath : null
+                };
+            })
+            .ToArray();
+    }
+
+    private string BuildMessage(FfmpegLocation location, IReadOnlyList<EngineFormatInfo> formats, int hardwareCount)
+    {
+        string message;
+        if (hardwareCount == formats.Count)
+        {
+            // Kept verbatim: operators and QA scripts match this sentence.
+            message = "Hardware encoding is available and will be used.";
+        }
+        else if (hardwareCount == 0)
+        {
+            message = "No usable hardware encoder was detected; exports will use software encoding.";
+        }
+        else
+        {
+            var hardware = formats
+                .Where(format => format.Hardware)
+                .Select(format => string.Concat(
+                    format.Format,
+                    " (",
+                    format.Encoder,
+                    string.IsNullOrEmpty(format.Device) ? string.Empty : " on " + format.Device,
+                    ")"));
+            var software = formats
+                .Where(format => !format.Hardware)
+                .Select(format => string.Concat(format.Format, " (", format.Encoder, ")"));
+
+            message = string.Concat(
+                "Hardware encoding is available and will be used for ",
+                string.Join(", ", hardware),
+                "; ",
+                string.Join(", ", software),
+                " will use software encoding because no usable hardware encoder was found.");
+        }
+
+        if (hardwareCount > 0 && _transcoding?.Current is { EnableHardwareEncoding: false })
+        {
+            message += " Jellyfin's transcoding settings disable hardware encoding, so profiles using them will encode in software.";
+        }
+
+        return message;
     }
 }
 
@@ -103,9 +176,37 @@ public class EngineInfoResponse
     /// <summary>Gets or sets the VA-API render device, when VA-API is used.</summary>
     public string? VaapiDevice { get; set; }
 
+    /// <summary>Gets or sets the QSV render device (<c>EncodingOptions.QsvDevice</c>), when QSV is used.</summary>
+    public string? QsvDevice { get; set; }
+
     /// <summary>Gets or sets a value indicating whether libsvtav1 is available for software AV1.</summary>
     public bool SvtAv1Available { get; set; }
 
+    /// <summary>
+    /// Gets or sets the per-format decision: the exact encoder every export
+    /// format will use and the device it was verified on, or the software
+    /// fallback when no device can encode that codec.
+    /// </summary>
+    public IReadOnlyList<EngineFormatInfo> Formats { get; set; } = Array.Empty<EngineFormatInfo>();
+
     /// <summary>Gets or sets an operator-facing summary or error.</summary>
     public string Message { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// What one export format will actually encode with.
+/// </summary>
+public class EngineFormatInfo
+{
+    /// <summary>Gets or sets the format name: H264, H265 or AV1.</summary>
+    public string Format { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether a hardware encoder is used for this format.</summary>
+    public bool Hardware { get; set; }
+
+    /// <summary>Gets or sets the exact FFmpeg encoder name, e.g. <c>h264_vaapi</c> or <c>libsvtav1</c>.</summary>
+    public string Encoder { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the render device the encoder runs on, when hardware is used.</summary>
+    public string? Device { get; set; }
 }

@@ -28,15 +28,38 @@ public enum HwAccelKind
 }
 
 /// <summary>
-/// Decided hardware acceleration for this server: the family and, for VA-API,
-/// the render device to hand to FFmpeg.
+/// Decided hardware acceleration for one export format: the family and, for
+/// VA-API/QSV, the render device the exact encoder was verified on.
+/// </summary>
+/// <param name="Kind">Acceleration family, or <see cref="HwAccelKind.None"/> for software.</param>
+/// <param name="DevicePath">Render device for this encoder, when hardware is used.</param>
+public sealed record FormatAcceleration(HwAccelKind Kind, string? DevicePath = null)
+{
+    /// <summary>Gets the software decision for a format.</summary>
+    public static FormatAcceleration Software { get; } = new(HwAccelKind.None);
+
+    /// <summary>Gets a value indicating whether a hardware encoder is used for this format.</summary>
+    public bool IsHardware => Kind != HwAccelKind.None;
+}
+
+/// <summary>
+/// Decided hardware acceleration for this server: the family, the device the
+/// family was configured with, and — when the exact encoders were verified
+/// per codec — which device (or software) each export format gets.
 /// </summary>
 /// <param name="Kind">Acceleration family.</param>
-/// <param name="DevicePath">VA-API render device.</param>
+/// <param name="DevicePath">Configured render device for the family (VA-API or QSV).</param>
 public sealed record HwAccelPlan(HwAccelKind Kind, string? DevicePath = null)
 {
     /// <summary>Gets the software-encoding plan.</summary>
     public static HwAccelPlan Software { get; } = new(HwAccelKind.None);
+
+    /// <summary>
+    /// Gets the per-format decisions from the exact-encoder verification.
+    /// Null when detection only verified the family (legacy behaviour: the
+    /// family plan applies to every format).
+    /// </summary>
+    public IReadOnlyDictionary<ExportFormat, FormatAcceleration>? Formats { get; init; }
 
     /// <summary>Gets a value indicating whether a hardware encoder is used.</summary>
     public bool IsHardware => Kind != HwAccelKind.None;
@@ -50,7 +73,32 @@ public sealed record HwAccelPlan(HwAccelKind Kind, string? DevicePath = null)
         HwAccelKind.VideoToolbox => "videotoolbox",
         _ => "none"
     };
+
+    /// <summary>
+    /// The decision for one export format: the exact device its encoder was
+    /// verified on, or software when no device could encode it. This is where
+    /// a per-job AV1 export stops using <c>av1_vaapi</c> on a device that
+    /// cannot encode AV1.
+    /// </summary>
+    /// <param name="format">Profile format.</param>
+    /// <returns>The format's acceleration decision.</returns>
+    public FormatAcceleration ForFormat(ExportFormat format) =>
+        Formats is not null && Formats.TryGetValue(format, out var resolved)
+            ? resolved
+            : new FormatAcceleration(Kind, DevicePath);
 }
+
+/// <summary>
+/// The encoder a job will actually run: name, whether it is hardware, and the
+/// device its family needs. Produced by
+/// <see cref="FfmpegCommandBuilder.ResolveVideoEncoder"/> so the command and
+/// the diagnostics can never disagree.
+/// </summary>
+/// <param name="Encoder">Exact FFmpeg encoder name, e.g. <c>av1_vaapi</c> or <c>libsvtav1</c>.</param>
+/// <param name="Hardware">Whether the encoder is a hardware one.</param>
+/// <param name="Kind">Acceleration family of the encoder (software when <see cref="HwAccelKind.None"/>).</param>
+/// <param name="DevicePath">Device to pass to FFmpeg (<c>-vaapi_device</c>/<c>-qsv_device</c>), when the encoder needs one.</param>
+public readonly record struct VideoEncoderChoice(string Encoder, bool Hardware, HwAccelKind Kind, string? DevicePath);
 
 /// <summary>
 /// One fully built FFmpeg invocation: the argv list, the muxer and the facts
@@ -124,6 +172,10 @@ public static class FfmpegCommandBuilder
     /// <param name="outputPath">Temporary output path FFmpeg writes.</param>
     /// <param name="hwAccel">Acceleration plan; software when null.</param>
     /// <param name="svtAv1Available">Whether FFmpeg has libsvtav1 (faster AV1).</param>
+    /// <param name="jellyfin">
+    /// Jellyfin's transcoding settings, honoured when the job's profile has
+    /// <c>UseJellyfinTranscodingSettings</c> on; null keeps the plugin defaults.
+    /// </param>
     /// <returns>The complete invocation.</returns>
     public static FfmpegCommand Build(
         ExportJob job,
@@ -131,17 +183,32 @@ public static class FfmpegCommandBuilder
         string inputPath,
         string outputPath,
         HwAccelPlan? hwAccel = null,
-        bool svtAv1Available = true)
+        bool svtAv1Available = true,
+        JellyfinTranscodingSettings? jellyfin = null)
     {
         ArgumentNullException.ThrowIfNull(job);
         ArgumentNullException.ThrowIfNull(probe);
         ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
 
+        // Jellyfin's settings only apply to profiles that asked for them; a
+        // profile with the toggle off keeps the plugin's own encoder settings.
+        var settings = job.UseJellyfinTranscodingSettings ? jellyfin : null;
+
         var accel = hwAccel ?? HwAccelPlan.Software;
+        if (settings is { EnableHardwareEncoding: false })
+        {
+            // Jellyfin's transcoding settings say no hardware: every format
+            // encodes in software, whatever the detection plan found.
+            accel = HwAccelPlan.Software;
+        }
+
         var (targetWidth, targetHeight) = GetTargetDimensions(job.Resolution);
         var (width, height) = ScaleToFit(probe.Width, probe.Height, targetWidth, targetHeight);
-        var video = SelectVideoEncoder(job.Format, accel, svtAv1Available, targetWidth);
+        var video = ResolveVideoEncoder(job.Format, accel, svtAv1Available);
+        var videoOptions = video.Hardware
+            ? HardwareOptions(video.Kind, job.Format, settings)
+            : SoftwareOptions(job.Format, svtAv1Available, settings);
 
         var arguments = new List<string>
         {
@@ -152,10 +219,19 @@ public static class FfmpegCommandBuilder
             "error"
         };
 
-        if (video.Hardware && accel.Kind == HwAccelKind.Vaapi)
+        if (video.Hardware && video.Kind == HwAccelKind.Vaapi)
         {
             arguments.Add("-vaapi_device");
-            arguments.Add(string.IsNullOrWhiteSpace(accel.DevicePath) ? DefaultVaapiDevice : accel.DevicePath!);
+            arguments.Add(string.IsNullOrWhiteSpace(video.DevicePath) ? DefaultVaapiDevice : video.DevicePath!);
+        }
+
+        if (video.Hardware && video.Kind == HwAccelKind.Qsv && !string.IsNullOrWhiteSpace(video.DevicePath))
+        {
+            // The QSV device comes from EncodingOptions.QsvDevice; without it
+            // FFmpeg picks its default adapter, which is not necessarily the
+            // one the operator configured.
+            arguments.Add("-qsv_device");
+            arguments.Add(video.DevicePath!);
         }
 
         arguments.Add("-i");
@@ -165,10 +241,18 @@ public static class FfmpegCommandBuilder
         arguments.Add("-map");
         arguments.Add("0:a?");
         arguments.Add("-vf");
-        arguments.Add(BuildScaleFilter(width, height, accel, video.Hardware));
+        arguments.Add(BuildScaleFilter(width, height, video));
         arguments.Add("-c:v");
         arguments.Add(video.Encoder);
-        arguments.AddRange(video.Options);
+        arguments.AddRange(videoOptions);
+        if (!video.Hardware && settings is { EncodingThreadCount: > 0 })
+        {
+            // FFmpeg's own default when unset; only software encoding is
+            // thread-capped (hardware encoders manage their own queues).
+            arguments.Add("-threads");
+            arguments.Add(settings.EncodingThreadCount.ToString(CultureInfo.InvariantCulture));
+        }
+
         var audioCodec = AddAudioArguments(job.AudioChannels, arguments);
         arguments.Add("-max_muxing_queue_size");
         arguments.Add("1024");
@@ -191,6 +275,69 @@ public static class FfmpegCommandBuilder
             Height = height
         };
     }
+
+    /// <summary>
+    /// Resolves the exact encoder a job will run: the hardware encoder that
+    /// was verified for this format on its device, or the software encoder.
+    /// The per-format decision lives here, at command-build time, so a job in
+    /// an AV1 profile can never be handed <c>av1_vaapi</c> on a device that
+    /// cannot encode AV1.
+    /// </summary>
+    /// <param name="format">Profile format.</param>
+    /// <param name="accel">Acceleration plan for this server.</param>
+    /// <param name="svtAv1Available">Whether FFmpeg has libsvtav1.</param>
+    /// <returns>The encoder choice, including the device FFmpeg needs.</returns>
+    public static VideoEncoderChoice ResolveVideoEncoder(
+        ExportFormat format,
+        HwAccelPlan accel,
+        bool svtAv1Available)
+    {
+        ArgumentNullException.ThrowIfNull(accel);
+
+        var codec = accel.ForFormat(format);
+        var suffix = codec.Kind switch
+        {
+            HwAccelKind.Cuda => "nvenc",
+            HwAccelKind.Vaapi => "vaapi",
+            HwAccelKind.Qsv => "qsv",
+            HwAccelKind.VideoToolbox => "videotoolbox",
+            _ => null
+        };
+
+        if (suffix is not null && !(codec.Kind == HwAccelKind.VideoToolbox && format == ExportFormat.AV1))
+        {
+            var prefix = format switch
+            {
+                ExportFormat.H264 => "h264",
+                ExportFormat.H265 => "hevc",
+                _ => "av1"
+            };
+
+            string? device = codec.Kind switch
+            {
+                HwAccelKind.Vaapi => string.IsNullOrWhiteSpace(codec.DevicePath) ? DefaultVaapiDevice : codec.DevicePath,
+                HwAccelKind.Qsv => string.IsNullOrWhiteSpace(codec.DevicePath) ? null : codec.DevicePath,
+                _ => null
+            };
+
+            return new VideoEncoderChoice(prefix + "_" + suffix, true, codec.Kind, device);
+        }
+
+        return new VideoEncoderChoice(SoftwareEncoderName(format, svtAv1Available), false, HwAccelKind.None, null);
+    }
+
+    /// <summary>
+    /// The software encoder for a format.
+    /// </summary>
+    /// <param name="format">Profile format.</param>
+    /// <param name="svtAv1Available">Whether FFmpeg has libsvtav1.</param>
+    /// <returns><c>libx264</c>, <c>libx265</c>, <c>libsvtav1</c> or <c>libaom-av1</c>.</returns>
+    public static string SoftwareEncoderName(ExportFormat format, bool svtAv1Available) => format switch
+    {
+        ExportFormat.H265 => "libx265",
+        ExportFormat.AV1 => svtAv1Available ? "libsvtav1" : "libaom-av1",
+        _ => "libx264"
+    };
 
     /// <summary>
     /// Target dimensions for a profile resolution.
@@ -251,10 +398,10 @@ public static class FfmpegCommandBuilder
         _ => "800k"
     };
 
-    private static string BuildScaleFilter(int width, int height, HwAccelPlan accel, bool hardware)
+    private static string BuildScaleFilter(int width, int height, VideoEncoderChoice video)
     {
         var scale = string.Format(CultureInfo.InvariantCulture, "scale={0}:{1}", width, height);
-        if (hardware && accel.Kind == HwAccelKind.Vaapi)
+        if (video.Hardware && video.Kind == HwAccelKind.Vaapi)
         {
             return string.Format(CultureInfo.InvariantCulture, "format=nv12,hwupload,scale_vaapi=w={0}:h={1}", width, height);
         }
@@ -278,51 +425,78 @@ public static class FfmpegCommandBuilder
         }
     }
 
-    private static (string Encoder, IReadOnlyList<string> Options, bool Hardware) SelectVideoEncoder(
+    private static IReadOnlyList<string> HardwareOptions(
+        HwAccelKind kind,
         ExportFormat format,
-        HwAccelPlan accel,
-        bool svtAv1Available,
-        int targetWidth)
+        JellyfinTranscodingSettings? settings)
     {
-        var suffix = accel.Kind switch
-        {
-            HwAccelKind.Cuda => "nvenc",
-            HwAccelKind.Vaapi => "vaapi",
-            HwAccelKind.Qsv => "qsv",
-            HwAccelKind.VideoToolbox => "videotoolbox",
-            _ => null
-        };
+        var preset = settings is { HonoursPreset: true }
+            ? JellyfinPresetMap.HardwarePreset(kind, settings.EncoderPreset)
+            : null;
 
-        if (suffix is not null && !(accel.Kind == HwAccelKind.VideoToolbox && format == ExportFormat.AV1))
+        switch (kind)
         {
-            var prefix = format switch
-            {
-                ExportFormat.H264 => "h264",
-                ExportFormat.H265 => "hevc",
-                _ => "av1"
-            };
-
-            return (prefix + "_" + suffix, HardwareOptions(accel.Kind, format), true);
+            case HwAccelKind.Cuda:
+                return new[] { "-preset", preset ?? "p5", "-rc", "vbr", "-cq", "23", "-b:v", "0" };
+            case HwAccelKind.Qsv:
+                return new[] { "-preset", preset ?? "medium", "-global_quality", "23" };
+            case HwAccelKind.Vaapi:
+                // VA-API encoders have no preset flag; the quality knob is -qp.
+                return new[] { "-qp", "23" };
+            case HwAccelKind.VideoToolbox:
+                return new[] { "-q:v", "55" };
+            default:
+                return Array.Empty<string>();
         }
-
-        return format switch
-        {
-            ExportFormat.H265 => ("libx265", new[] { "-preset", "medium", "-crf", "24", "-pix_fmt", "yuv420p" }, false),
-            ExportFormat.AV1 => svtAv1Available
-                ? ("libsvtav1", new[] { "-preset", "8", "-crf", "32", "-pix_fmt", "yuv420p" }, false)
-                : ("libaom-av1", new[] { "-crf", "32", "-b:v", "0", "-cpu-used", "8", "-row-mt", "1", "-pix_fmt", "yuv420p" }, false),
-            _ => ("libx264", new[] { "-preset", "medium", "-crf", "20", "-profile:v", "high", "-pix_fmt", "yuv420p" }, false)
-        };
     }
 
-    private static IReadOnlyList<string> HardwareOptions(HwAccelKind kind, ExportFormat format) => kind switch
+    private static IReadOnlyList<string> SoftwareOptions(
+        ExportFormat format,
+        bool svtAv1Available,
+        JellyfinTranscodingSettings? settings)
     {
-        HwAccelKind.Cuda => new[] { "-preset", "p5", "-rc", "vbr", "-cq", "23", "-b:v", "0" },
-        HwAccelKind.Qsv => new[] { "-preset", "medium", "-global_quality", "23" },
-        HwAccelKind.Vaapi => new[] { "-qp", "23" },
-        HwAccelKind.VideoToolbox => new[] { "-q:v", "55" },
-        _ => Array.Empty<string>()
-    };
+        var preset = settings is { HonoursPreset: true } ? settings.EncoderPreset.Trim() : null;
+
+        switch (format)
+        {
+            case ExportFormat.H265:
+                return new[]
+                {
+                    "-preset", JellyfinPresetMap.X26xPreset(preset) ?? "medium",
+                    "-crf", (settings?.H265Crf ?? 24).ToString(CultureInfo.InvariantCulture),
+                    "-pix_fmt", "yuv420p"
+                };
+            case ExportFormat.AV1:
+                // Jellyfin has no AV1 CRF knob, so AV1 keeps the plugin's
+                // documented SVT-AV1 settings; only the preset is mapped.
+                if (svtAv1Available)
+                {
+                    return new[]
+                    {
+                        "-preset", JellyfinPresetMap.SvtPreset(preset) ?? "8",
+                        "-crf", "32",
+                        "-pix_fmt", "yuv420p"
+                    };
+                }
+
+                return new[]
+                {
+                    "-crf", "32",
+                    "-b:v", "0",
+                    "-cpu-used", JellyfinPresetMap.AomCpuUsed(preset) ?? "8",
+                    "-row-mt", "1",
+                    "-pix_fmt", "yuv420p"
+                };
+            default:
+                return new[]
+                {
+                    "-preset", JellyfinPresetMap.X26xPreset(preset) ?? "medium",
+                    "-crf", (settings?.H264Crf ?? 20).ToString(CultureInfo.InvariantCulture),
+                    "-profile:v", "high",
+                    "-pix_fmt", "yuv420p"
+                };
+        }
+    }
 
     private static int MakeEven(int value) => value % 2 == 0 ? value : value - 1;
 }

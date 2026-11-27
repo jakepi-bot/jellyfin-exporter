@@ -86,6 +86,13 @@ public class ExportJob
     public string OutputDirectory { get; set; } = string.Empty;
 
     /// <summary>
+    /// Snapshot of the profile's <c>UseJellyfinTranscodingSettings</c> toggle,
+    /// so a queued job keeps its encoder-settings behaviour when the profile
+    /// is edited while the job waits in the queue.
+    /// </summary>
+    public bool UseJellyfinTranscodingSettings { get; set; } = true;
+
+    /// <summary>
     /// Gets a value indicating whether the job is in a terminal state.
     /// </summary>
     public bool IsTerminal => Status is ExportJobStatus.Completed or ExportJobStatus.Failed or ExportJobStatus.Cancelled;

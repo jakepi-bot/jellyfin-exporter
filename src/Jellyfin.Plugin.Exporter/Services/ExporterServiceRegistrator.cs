@@ -22,6 +22,11 @@ public class ExporterServiceRegistrator : IPluginServiceRegistrator
     {
         serviceCollection.AddSingleton<IOutputDirectoryInspector, OutputDirectoryInspector>();
 
+        // Jellyfin's own transcoding settings (hardware switch, allowed
+        // codecs, preset, CRFs, threads), read live for every job, save
+        // validation and plan refusal.
+        serviceCollection.AddSingleton<ITranscodingSettingsSource, JellyfinTranscodingSettingsSource>();
+
         // The queue is a singleton behind two contracts: IExportQueue for
         // callers that enqueue, and ExportQueue for the worker that drains it
         // and the status API that reports its persistence state.

@@ -675,6 +675,20 @@
                             </div>
                         </div>
 
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="jfx-use-jellyfin-settings" class="emby-checkbox" />
+                                <span>Use Jellyfin's transcoding settings</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                When on, exports honour Dashboard &gt; Playback: hardware encoding on/off,
+                                the allowed HEVC/AV1 codecs, the encoder preset, the H.264/H.265 CRF and the
+                                encoding thread count. AV1 has no Jellyfin CRF setting, so AV1 keeps this
+                                plugin's SVT-AV1 defaults. Turn it off to use this plugin's own encoder
+                                settings instead.
+                            </div>
+                        </div>
+
                         <div class="jfx-savebar">
                             <button is="emby-button" type="submit" id="jfx-apply-profile"
                                     class="raised button-submit emby-button">
@@ -1869,7 +1883,8 @@
                     { server: 'Resolution', local: 'resolution' },
                     { server: 'AudioChannels', local: 'audioChannels' },
                     { server: 'OutputDirectory', local: 'outputDirectory' },
-                    { server: 'Enabled', local: 'enabled' }
+                    { server: 'Enabled', local: 'enabled' },
+                    { server: 'UseJellyfinTranscodingSettings', local: 'useJellyfinTranscodingSettings' }
                 ];
                 var CONFIG_FIELDS = [
                     { server: 'MaxConcurrentExports', local: 'maxConcurrentExports' },
@@ -1906,6 +1921,7 @@
                     directoryError: page.querySelector('#jfx-directory-error'),
                     directoryOk: page.querySelector('#jfx-directory-ok'),
                     enabled: page.querySelector('#jfx-enabled'),
+                    useJellyfinSettings: page.querySelector('#jfx-use-jellyfin-settings'),
                     addProfile: page.querySelector('#jfx-add-profile'),
                     cancelProfile: page.querySelector('#jfx-cancel-profile'),
                     maxExports: page.querySelector('#jfx-max-exports'),
@@ -2049,7 +2065,10 @@
                         resolution: canonical(pick(raw, 'Resolution'), RESOLUTIONS, RESOLUTIONS[1].value),
                         audioChannels: canonical(pick(raw, 'AudioChannels'), AUDIO, AUDIO[0].value),
                         outputDirectory: (pick(raw, 'OutputDirectory') || '').toString().trim(),
-                        enabled: pick(raw, 'Enabled') === undefined ? true : !!pick(raw, 'Enabled')
+                        enabled: pick(raw, 'Enabled') === undefined ? true : !!pick(raw, 'Enabled'),
+                        useJellyfinTranscodingSettings: pick(raw, 'UseJellyfinTranscodingSettings') === undefined
+                            ? true
+                            : !!pick(raw, 'UseJellyfinTranscodingSettings')
                     };
                 }
 
@@ -2233,6 +2252,12 @@
 
                         var formatCell = document.createElement('td');
                         formatCell.textContent = labelFor(FORMATS, profile.format);
+                        if (issueText(profile.id, 'Format')) {
+                            var formatError = document.createElement('div');
+                            formatError.className = 'jfx-field-error';
+                            formatError.textContent = issueText(profile.id, 'Format');
+                            formatCell.appendChild(formatError);
+                        }
 
                         var resolutionCell = document.createElement('td');
                         resolutionCell.textContent = labelFor(RESOLUTIONS, profile.resolution);
@@ -2324,7 +2349,7 @@
                 function openEditor(profileId) {
                     state.editingId = profileId;
                     els.nameError.textContent = '';
-                    els.formatError.textContent = '';
+                    els.formatError.textContent = issueText(profileId, 'Format');
                     els.resolutionError.textContent = '';
                     els.audioError.textContent = '';
                     els.directoryError.textContent = '';
@@ -2343,6 +2368,7 @@
                         els.audio.value = profile.audioChannels;
                         els.directory.value = profile.outputDirectory;
                         els.enabled.checked = profile.enabled;
+                        els.useJellyfinSettings.checked = profile.useJellyfinTranscodingSettings !== false;
                         els.nameError.textContent = issueText(profileId, 'Name');
                         els.directoryError.textContent = issueText(profileId, 'OutputDirectory');
                     } else {
@@ -2353,6 +2379,7 @@
                         els.audio.value = AUDIO[0].value;
                         els.directory.value = '';
                         els.enabled.checked = true;
+                        els.useJellyfinSettings.checked = true;
                     }
 
                     els.editor.hidden = false;
@@ -2402,7 +2429,8 @@
                         resolution: els.resolution.value,
                         audioChannels: els.audio.value,
                         outputDirectory: els.directory.value.trim(),
-                        enabled: els.enabled.checked
+                        enabled: els.enabled.checked,
+                        useJellyfinTranscodingSettings: els.useJellyfinSettings.checked
                     };
                 }
 

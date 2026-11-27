@@ -70,15 +70,18 @@ public sealed class ExportEngine : IExportEngine
     private readonly IFfmpegLocator _locator;
     private readonly PathReservationRegistry _reservations;
     private readonly ILogger<ExportEngine> _logger;
+    private readonly ITranscodingSettingsSource? _transcoding;
 
     public ExportEngine(
         IFfmpegLocator locator,
         PathReservationRegistry reservations,
-        ILogger<ExportEngine> logger)
+        ILogger<ExportEngine> logger,
+        ITranscodingSettingsSource? transcoding = null)
     {
         _locator = locator;
         _reservations = reservations;
         _logger = logger;
+        _transcoding = transcoding;
     }
 
     /// <inheritdoc />
@@ -128,13 +131,17 @@ public sealed class ExportEngine : IExportEngine
 
             DeleteFileIfPresent(tempPath);
 
+            // Read Jellyfin's transcoding settings per job: a change in the
+            // dashboard (hardware switch, CRF, preset) applies to the next
+            // export without a restart. Profiles with the toggle off ignore it.
             var command = FfmpegCommandBuilder.Build(
                 job,
                 probe,
                 item.SourcePath,
                 tempPath,
                 location.HwAccel,
-                location.SvtAv1Available);
+                location.SvtAv1Available,
+                _transcoding?.Current);
 
             _logger.LogInformation(
                 "Export {JobId} of '{Item}': {Description} -> {OutputPath}",

@@ -39,7 +39,8 @@ public class ConfigurationSerializationTests
                     Resolution = ExportResolution.Resolution1080p,
                     AudioChannels = ExportAudioChannels.Original,
                     OutputDirectory = "/media/exports",
-                    Enabled = true
+                    Enabled = true,
+                    UseJellyfinTranscodingSettings = true
                 },
                 new ExportProfile
                 {
@@ -49,7 +50,8 @@ public class ConfigurationSerializationTests
                     Resolution = ExportResolution.Resolution720p,
                     AudioChannels = ExportAudioChannels.Stereo,
                     OutputDirectory = "/srv/phone",
-                    Enabled = false
+                    Enabled = false,
+                    UseJellyfinTranscodingSettings = false
                 }
             }
         };
@@ -94,11 +96,44 @@ public class ConfigurationSerializationTests
         Assert.Equal(ExportAudioChannels.Original, restored.Profiles[0].AudioChannels);
         Assert.Equal("/media/exports", restored.Profiles[0].OutputDirectory);
         Assert.True(restored.Profiles[0].Enabled);
+        Assert.True(restored.Profiles[0].UseJellyfinTranscodingSettings);
+        Assert.False(restored.Profiles[1].UseJellyfinTranscodingSettings);
 
         Assert.Equal(ExportFormat.AV1, restored.Profiles[1].Format);
         Assert.Equal(ExportResolution.Resolution720p, restored.Profiles[1].Resolution);
         Assert.Equal(ExportAudioChannels.Stereo, restored.Profiles[1].AudioChannels);
         Assert.False(restored.Profiles[1].Enabled);
+    }
+
+    [Fact]
+    public void XmlWithoutTheTranscodingToggle_DefaultsToHonouringJellyfinSettings()
+    {
+        // Configs saved by older plugin versions have no such element; the
+        // toggle must come back TRUE (the documented default).
+        const string xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <PluginConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <MaxConcurrentExports>1</MaxConcurrentExports>
+              <Profiles>
+                <ExportProfile>
+                  <Id>6f1f6b64-3a4e-4c31-9a6f-6a1f8c0f0001</Id>
+                  <Name>Legacy</Name>
+                  <Format>H264</Format>
+                  <Resolution>Resolution1080p</Resolution>
+                  <AudioChannels>Original</AudioChannels>
+                  <OutputDirectory>/media/exports</OutputDirectory>
+                  <Enabled>true</Enabled>
+                </ExportProfile>
+              </Profiles>
+            </PluginConfiguration>
+            """;
+
+        var serializer = new XmlSerializer(typeof(PluginConfiguration));
+        using var reader = new StringReader(xml);
+        var restored = (PluginConfiguration?)serializer.Deserialize(reader);
+
+        Assert.NotNull(restored);
+        Assert.True(restored!.Profiles[0].UseJellyfinTranscodingSettings);
     }
 
     [Fact]

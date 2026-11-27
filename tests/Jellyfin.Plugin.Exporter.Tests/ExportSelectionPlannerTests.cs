@@ -43,8 +43,27 @@ public class ExportSelectionPlannerTests
         Assert.Equal(Profile.Resolution, job.Resolution);
         Assert.Equal(Profile.AudioChannels, job.AudioChannels);
         Assert.Equal(Profile.OutputDirectory, job.OutputDirectory);
+        Assert.Equal(Profile.UseJellyfinTranscodingSettings, job.UseJellyfinTranscodingSettings);
         Assert.Equal(ExportJobStatus.Queued, job.Status);
         Assert.NotEqual(Guid.Empty, job.Id);
+    }
+
+    [Fact]
+    public void Plan_SnapshotsTheTranscodingSettingsToggle()
+    {
+        var profile = new ExportProfile
+        {
+            Id = Guid.NewGuid(),
+            Name = "Plugin settings only",
+            Format = ExportFormat.H264,
+            OutputDirectory = "/media/exports",
+            UseJellyfinTranscodingSettings = false
+        };
+        var item = new MediaTreeNode(Guid.NewGuid(), "Heat", "Movie");
+
+        var plan = ExportSelectionPlanner.Plan(profile, new[] { item }, Array.Empty<ExportJob>());
+
+        Assert.False(Assert.Single(plan.Jobs).UseJellyfinTranscodingSettings);
     }
 
     [Fact]

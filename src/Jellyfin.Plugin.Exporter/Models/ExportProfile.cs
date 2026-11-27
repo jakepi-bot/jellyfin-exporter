@@ -44,4 +44,14 @@ public class ExportProfile
     /// enqueue new jobs. Running jobs are unaffected.
     /// </summary>
     public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether exports with this profile
+    /// honour Jellyfin's own transcoding settings (Dashboard &gt; Playback):
+    /// the hardware-encoding switch, the allowed HEVC/AV1 codecs, the encoder
+    /// preset, the H.264/H.265 CRF and the encoding thread count. Defaults to
+    /// true; when false the plugin's own encoder settings apply, exactly as
+    /// before this option existed.
+    /// </summary>
+    public bool UseJellyfinTranscodingSettings { get; set; } = true;
 }

@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Jellyfin.Plugin.Exporter.Configuration;
 using Jellyfin.Plugin.Exporter.Models;
+using Jellyfin.Plugin.Exporter.Services;
 using MediaBrowser.Common.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,13 +35,14 @@ public class ExporterProfilesController : ControllerBase
     };
 
     private readonly IOutputDirectoryInspector _inspector;
+    private readonly ITranscodingSettingsSource? _transcoding;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ExporterProfilesController"/> class.
     /// Used when the plugin's services are not registered yet.
     /// </summary>
     public ExporterProfilesController()
-        : this(new OutputDirectoryInspector())
+        : this(new OutputDirectoryInspector(), null)
     {
     }
 
@@ -48,9 +50,11 @@ public class ExporterProfilesController : ControllerBase
     /// Initializes a new instance of the <see cref="ExporterProfilesController"/> class.
     /// </summary>
     /// <param name="inspector">Directory probe.</param>
-    public ExporterProfilesController(IOutputDirectoryInspector inspector)
+    /// <param name="transcoding">Jellyfin's transcoding settings, for the allowed-codec checks.</param>
+    public ExporterProfilesController(IOutputDirectoryInspector inspector, ITranscodingSettingsSource? transcoding = null)
     {
         _inspector = inspector;
+        _transcoding = transcoding;
     }
 
     /// <summary>
@@ -74,7 +78,9 @@ public class ExporterProfilesController : ControllerBase
         }
 
         var configuration = payload.ToConfiguration();
-        var issues = PluginConfigurationValidator.Validate(configuration, _inspector);
+        // The transcoding settings gate the save: a profile honouring
+        // Jellyfin's settings cannot use a codec Jellyfin disallows.
+        var issues = PluginConfigurationValidator.Validate(configuration, _inspector, _transcoding?.Current);
         return new ConfigurationValidationResult
         {
             Valid = issues.Count == 0,
@@ -180,7 +186,11 @@ public class ConfigurationPayload
                 Resolution = ParseEnum(profile.Resolution, ExportResolution.Resolution1080p),
                 AudioChannels = ParseEnum(profile.AudioChannels, ExportAudioChannels.Original),
                 OutputDirectory = profile.OutputDirectory ?? string.Empty,
-                Enabled = profile.Enabled ?? true
+                Enabled = profile.Enabled ?? true,
+
+                // Absent means TRUE: configs written before this option must
+                // keep honouring Jellyfin's transcoding settings.
+                UseJellyfinTranscodingSettings = profile.UseJellyfinTranscodingSettings ?? true
             });
         }
 
@@ -245,6 +255,12 @@ public class ProfilePayload
 
     /// <summary>Gets or sets a value indicating whether the profile can queue exports.</summary>
     public bool? Enabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the profile honours Jellyfin's
+    /// transcoding settings; null means true.
+    /// </summary>
+    public bool? UseJellyfinTranscodingSettings { get; set; }
 }
 
 /// <summary>

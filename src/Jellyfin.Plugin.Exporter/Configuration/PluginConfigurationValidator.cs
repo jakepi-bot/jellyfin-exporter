@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using Jellyfin.Plugin.Exporter.Export;
 using Jellyfin.Plugin.Exporter.Models;
 
 namespace Jellyfin.Plugin.Exporter.Configuration;
@@ -29,10 +31,18 @@ public static class PluginConfigurationValidator
     /// </summary>
     /// <param name="configuration">Candidate configuration.</param>
     /// <param name="inspector">Directory probe; defaults to the real file system.</param>
+    /// <param name="transcoding">
+    /// Jellyfin's current transcoding settings; when given, profiles that
+    /// honour them are checked against Jellyfin's allowed codecs
+    /// (<c>AllowHevcEncoding</c>/<c>AllowAv1Encoding</c>). Null skips that
+    /// check (used where the encoding options are not reachable, e.g.
+    /// <c>Plugin.UpdateConfiguration</c>).
+    /// </param>
     /// <returns>All problems found; empty when the configuration may be saved.</returns>
     public static IReadOnlyList<ConfigurationIssue> Validate(
         PluginConfiguration? configuration,
-        IOutputDirectoryInspector? inspector = null)
+        IOutputDirectoryInspector? inspector = null,
+        JellyfinTranscodingSettings? transcoding = null)
     {
         var issues = new List<ConfigurationIssue>();
         if (configuration is null)
@@ -111,6 +121,16 @@ public static class PluginConfigurationValidator
             {
                 issues.Add(new ConfigurationIssue(profile.Id, nameof(ExportProfile.OutputDirectory), probe.Message));
             }
+
+            if (transcoding is not null &&
+                profile.UseJellyfinTranscodingSettings &&
+                !transcoding.Allows(profile.Format))
+            {
+                issues.Add(new ConfigurationIssue(
+                    profile.Id,
+                    nameof(ExportProfile.Format),
+                    FormatBlockedMessage(profile, transcoding)));
+            }
         }
 
         if (configuration.DefaultProfileId is Guid defaultId && configuration.GetProfile(defaultId) is null)
@@ -122,5 +142,29 @@ public static class PluginConfigurationValidator
         }
 
         return issues;
+    }
+
+    /// <summary>
+    /// The operator-facing message for a profile whose format Jellyfin's
+    /// transcoding settings do not allow. Used both when the settings page
+    /// validates a save and when the plan refuses to queue the profile.
+    /// </summary>
+    /// <param name="profile">The blocked profile.</param>
+    /// <param name="transcoding">Jellyfin's current transcoding settings.</param>
+    /// <returns>Message naming the Jellyfin switch to flip.</returns>
+    public static string FormatBlockedMessage(ExportProfile profile, JellyfinTranscodingSettings transcoding)
+    {
+        var isAv1 = profile.Format == ExportFormat.AV1;
+        var codec = isAv1 ? "AV1" : "HEVC";
+        var label = isAv1 ? "AV1" : "H.265";
+        var jellyfinSwitch = isAv1 ? "Allow AV1 encoding" : "Allow HEVC encoding";
+
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "Jellyfin's transcoding settings have {0} encoding disabled (Dashboard > Playback, '{1}'), so profile '{2}' cannot export {3}. Enable it there, choose another format, or turn off \"Use Jellyfin's transcoding settings\" for this profile.",
+            codec,
+            jellyfinSwitch,
+            profile.Name,
+            label);
     }
 }
