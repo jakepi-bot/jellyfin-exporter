@@ -239,13 +239,290 @@
                     #JellyfinExporterBrowsePage [hidden] {
                         display: none !important;
                     }
+
+                    /* ---- profiles/settings panel (merged from the old config page) ---- */
+                    #JellyfinExporterBrowsePage .jfx-errors {
+                        border-left: 4px solid #cc3333;
+                        background: rgba(204, 51, 51, 0.12);
+                        padding: 0.75em 1em;
+                        margin: 0 0 1em 0;
+                        border-radius: 2px;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-errors ul {
+                        margin: 0.25em 0 0 1.25em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-field-error {
+                        color: #cc3333;
+                        font-size: 0.9em;
+                        margin-top: 0.2em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-field-error:empty {
+                        display: none;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-ok {
+                        color: #2e7d32;
+                        font-size: 0.9em;
+                        margin-top: 0.2em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-ok:empty {
+                        display: none;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-dirty {
+                        color: #b26a00;
+                        font-weight: 600;
+                    }
+
+                    /* The dashboard no longer styles table.defaultTable, so the
+                       profile table carries its own neutral theme-agnostic rules. */
+                    #JellyfinExporterBrowsePage table.jfx-profiles {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 0.5em 0 1em;
+                    }
+
+                    #JellyfinExporterBrowsePage table.jfx-profiles th,
+                    #JellyfinExporterBrowsePage table.jfx-profiles td {
+                        vertical-align: middle;
+                        text-align: left;
+                        padding: 0.6em 0.75em;
+                        border-bottom: 1px solid rgba(128, 128, 128, 0.35);
+                    }
+
+                    #JellyfinExporterBrowsePage table.jfx-profiles th {
+                        font-size: 0.8em;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                        opacity: 0.75;
+                    }
+
+                    #JellyfinExporterBrowsePage table.jfx-profiles th:first-child,
+                    #JellyfinExporterBrowsePage table.jfx-profiles td:first-child {
+                        padding-left: 0;
+                    }
+
+                    #JellyfinExporterBrowsePage table.jfx-profiles th:last-child,
+                    #JellyfinExporterBrowsePage table.jfx-profiles td:last-child {
+                        padding-right: 0;
+                        text-align: right;
+                    }
+
+                    #JellyfinExporterBrowsePage table.jfx-profiles tbody tr:hover {
+                        background: rgba(128, 128, 128, 0.08);
+                    }
+
+                    #JellyfinExporterBrowsePage table.jfx-profiles input[type=radio] {
+                        margin: 0;
+                        accent-color: #52b54b;
+                    }
+
+                    #JellyfinExporterBrowsePage table.jfx-profiles th:nth-child(6),
+                    #JellyfinExporterBrowsePage table.jfx-profiles td:nth-child(6) {
+                        text-align: center;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-dir {
+                        word-break: break-all;
+                        font-family: monospace;
+                        font-size: 0.9em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-badge {
+                        display: inline-block;
+                        padding: 0 0.4em;
+                        border-radius: 3px;
+                        background: rgba(82, 181, 75, 0.2);
+                        color: #52b54b;
+                        font-size: 0.8em;
+                        text-transform: uppercase;
+                        letter-spacing: 0.03em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-actions {
+                        white-space: nowrap;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-layout {
+                        font-family: monospace;
+                        font-size: 0.9em;
+                        white-space: pre-wrap;
+                        margin: 0.35em 0;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-savebar {
+                        display: flex;
+                        flex-wrap: wrap;
+                        align-items: center;
+                        gap: 1em;
+                        margin-top: 1.5em;
+                    }
+                
+                    /* Page-level tabs: Export (browse/queue) and Profiles (settings). */
+                    #JellyfinExporterBrowsePage .jfx-page-tabs {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 0.25em;
+                        border-bottom: 1px solid rgba(128, 128, 128, 0.35);
+                        margin: 0 0 1em 0;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-page-tab {
+                        background: transparent;
+                        border: 0;
+                        border-bottom: 2px solid transparent;
+                        color: inherit;
+                        padding: 0.5em 1em;
+                        cursor: pointer;
+                        font-size: 1em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-page-tab.is-active {
+                        border-bottom-color: #52b54b;
+                        font-weight: 600;
+                    }
+
+                    /* Season picker modal opened from a TV Shows card. */
+                    #JellyfinExporterBrowsePage .jfx-modal {
+                        position: fixed;
+                        inset: 0;
+                        z-index: 999998;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 1em;
+                        background: rgba(0, 0, 0, 0.5);
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-modal-card {
+                        width: 100%;
+                        max-width: 34em;
+                        max-height: 85vh;
+                        overflow-y: auto;
+                        border: 1px solid rgba(128, 128, 128, 0.5);
+                        border-radius: 4px;
+                        padding: 1em 1.25em 1.25em;
+                        box-shadow: 0 16px 24px 2px rgba(0, 0, 0, 0.35);
+                        /* Filled with the page's own background colour when the
+                           modal opens, so it follows the active theme. */
+                        background: #fff;
+                        color: inherit;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-modal-title {
+                        margin: 0 0 0.5em 0;
+                        font-size: 1.2em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-all-seasons {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.6em;
+                        font-weight: 600;
+                        cursor: pointer;
+                        padding: 0.4em 0.25em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-all-seasons input {
+                        margin: 0;
+                        accent-color: #52b54b;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-season-list {
+                        list-style: none;
+                        margin: 0.5em 0;
+                        padding: 0;
+                        max-height: 40vh;
+                        overflow-y: auto;
+                        border-top: 1px solid rgba(128, 128, 128, 0.3);
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-season-option {
+                        border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-season-option label {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.6em;
+                        padding: 0.55em 0.25em;
+                        cursor: pointer;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-season-option input {
+                        margin: 0;
+                        accent-color: #52b54b;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-season-empty {
+                        padding: 0.75em 0.25em;
+                        opacity: 0.75;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-modal-profile {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.75em;
+                        margin: 0.75em 0;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-modal-profile select {
+                        flex: 1;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-modal-actions {
+                        display: flex;
+                        gap: 0.75em;
+                        margin-top: 1em;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-modal-actions button {
+                        border-radius: 3px;
+                        padding: 0.45em 1.1em;
+                        cursor: pointer;
+                        border: 1px solid rgba(128, 128, 128, 0.5);
+                        background: transparent;
+                        color: inherit;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-modal-actions button.jfx-primary {
+                        background: #52b54b;
+                        border-color: #52b54b;
+                        color: #fff;
+                        font-weight: 600;
+                    }
+
+                    #JellyfinExporterBrowsePage .jfx-modal-actions button[disabled] {
+                        opacity: 0.5;
+                        cursor: default;
+                    }
                 </style>
 
-                <h1>Exporter</h1>
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h1 class="sectionTitle">Exporter</h1>
+                    <button is="emby-button" type="button" id="jfx-open-status" class="emby-button">
+                        <span>Export status</span>
+                    </button>
+                </div>
                 <p class="jfx-intro">
-                    Pick movies, whole shows or single seasons, choose a profile, then queue the export.
-                    Shows and seasons expand to one job per episode.
+                    Pick movies, or open a TV show to choose its seasons, pick a profile, then queue the
+                    export. Shows and seasons expand to one job per episode. Profiles and settings live on
+                    the <strong>Profiles</strong> tab.
                 </p>
+
+                <div class="jfx-page-tabs" role="tablist" aria-label="Exporter sections">
+                    <button type="button" class="jfx-page-tab is-active" id="jfx-tab-export"
+                            data-panel="export" role="tab" aria-selected="true">Export</button>
+                    <button type="button" class="jfx-page-tab" id="jfx-tab-profiles"
+                            data-panel="profiles" role="tab" aria-selected="false">Profiles</button>
+                </div>
+
+                <div id="jfx-panel-export">
 
                 <div id="jfx-error" class="jfx-banner jfx-error"></div>
                 <div id="jfx-warning" class="jfx-banner jfx-warning"></div>
@@ -254,8 +531,7 @@
                 <div class="jfx-toolbar">
                     <div class="jfx-tabs" role="tablist">
                         <button type="button" class="jfx-tab is-active" data-type="Movies" role="tab">Movies</button>
-                        <button type="button" class="jfx-tab" data-type="Series" role="tab">TV Shows</button>
-                        <button type="button" class="jfx-tab" data-type="Seasons" role="tab">TV Seasons</button>
+                        <button type="button" class="jfx-tab" data-type="TVShows" role="tab">TV Shows</button>
                     </div>
                     <input id="jfx-search" class="jfx-search" is="emby-input" type="search"
                            placeholder="Search this library" aria-label="Search this library">
@@ -288,6 +564,202 @@
                     <div class="jfx-confirm-actions">
                         <button id="jfx-confirm-go" type="button" class="jfx-primary">Queue</button>
                         <button id="jfx-confirm-cancel" type="button">Cancel</button>
+                    </div>
+                </div>
+                </div>
+
+                <div id="jfx-panel-profiles" hidden>
+                <div class="verticalSection">
+                    <p class="fieldDescription">
+                        Export profiles pick the codec, resolution, audio handling and destination folder for an
+                        export. A profile is chosen when items are queued from the Exporter page. Progress and the
+                        finished-job history are on the <a href="#" id="jfx-open-status-link">Export status</a> page.
+                    </p>
+                </div>
+
+                <div class="verticalSection">
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle">Export profiles</h2>
+                        <button is="emby-button" type="button" id="jfx-add-profile"
+                                class="raised button-submit emby-button">
+                            <span>Add profile</span>
+                        </button>
+                    </div>
+
+                    <div id="jfx-config-errors" class="jfx-errors" hidden></div>
+
+                    <p id="jfx-no-profiles" class="fieldDescription" hidden>
+                        No export profiles are configured yet. Add one to make exporting available.
+                    </p>
+
+                    <table class="defaultTable jfx-profiles" id="jfx-profiles-table" hidden>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Format</th>
+                                <th>Resolution</th>
+                                <th>Audio</th>
+                                <th>Output directory</th>
+                                <th>Default</th>
+                                <th class="jfx-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jfx-profiles-body"></tbody>
+                    </table>
+
+                    <div class="fieldDescription">
+                        Files are written into each profile's output directory following this layout:
+                        <div class="jfx-layout">&lt;OutputDirectory&gt;/Movies/{Movie Title} ({Year})/{Movie Title} ({Year}).{ext}
+&lt;OutputDirectory&gt;/TV/{Show Name}/Season {NN}/{NN} - {Episode Name}.{ext}</div>
+                        <code>{NN}</code> is the zero-padded season or episode number (01, 02, ...). Names come from
+                        Jellyfin metadata; characters that are not allowed in file names are replaced and duplicate
+                        file names are de-duplicated so nothing overwrites an earlier export.
+                    </div>
+                </div>
+
+                <div class="verticalSection" id="jfx-editor" hidden>
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle" id="jfx-editor-title">New profile</h2>
+                    </div>
+                    <form id="jfx-profile-form" autocomplete="off">
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="jfx-name">Profile name</label>
+                            <input is="emby-input" type="text" id="jfx-name" maxlength="64" required
+                                   placeholder="e.g. Archive 1080p" />
+                            <div class="fieldDescription">Shown in the export page's profile picker. Must be unique.</div>
+                            <div class="jfx-field-error" id="jfx-name-error"></div>
+                        </div>
+
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="jfx-format">Format</label>
+                            <select is="emby-select" id="jfx-format" class="emby-select-withcolor emby-select"></select>
+                            <div class="jfx-field-error" id="jfx-format-error"></div>
+                        </div>
+
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="jfx-resolution">Resolution</label>
+                            <select is="emby-select" id="jfx-resolution"
+                                    class="emby-select-withcolor emby-select"></select>
+                            <div class="jfx-field-error" id="jfx-resolution-error"></div>
+                        </div>
+
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="jfx-audio">Audio channels</label>
+                            <select is="emby-select" id="jfx-audio" class="emby-select-withcolor emby-select"></select>
+                            <div class="fieldDescription">
+                                Original copies the source audio untouched. 5.1 and Stereo transcode to AAC at 6 or 2
+                                channels.
+                            </div>
+                            <div class="jfx-field-error" id="jfx-audio-error"></div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="jfx-directory">Output directory</label>
+                            <input is="emby-input" type="text" id="jfx-directory" required
+                                   placeholder="/media/exports" />
+                            <div class="fieldDescription">
+                                Absolute path on the Jellyfin server. The Movies/ and TV/ folders are created inside
+                                it. The path must exist or be creatable, and writable by the Jellyfin process.
+                            </div>
+                            <div class="jfx-field-error" id="jfx-directory-error"></div>
+                            <div class="jfx-ok" id="jfx-directory-ok"></div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="jfx-enabled" class="emby-checkbox" />
+                                <span>Enabled</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Disabled profiles stay configured but cannot be used to queue new exports.
+                            </div>
+                        </div>
+
+                        <div class="jfx-savebar">
+                            <button is="emby-button" type="submit" id="jfx-apply-profile"
+                                    class="raised button-submit emby-button">
+                                <span>Apply</span>
+                            </button>
+                            <button is="emby-button" type="button" id="jfx-cancel-profile" class="emby-button">
+                                <span>Cancel</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Global settings</h2>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="jfx-max-exports">Max concurrent exports</label>
+                        <input is="emby-input" type="number" id="jfx-max-exports" min="1" max="8" step="1" />
+                        <div class="fieldDescription">
+                            How many FFmpeg exports may run at the same time (1-8). Keep this low on servers that
+                            also transcode for playback.
+                        </div>
+                        <div class="jfx-field-error" id="jfx-max-exports-error"></div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="jfx-history-limit">Job history</label>
+                        <input is="emby-input" type="number" id="jfx-history-limit" min="1" max="5000" step="1" />
+                        <div class="fieldDescription">
+                            How many finished exports the status page keeps, on disk and in the history table
+                            (1-5000). Queued and running exports are always shown.
+                        </div>
+                        <div class="jfx-field-error" id="jfx-history-limit-error"></div>
+                    </div>
+
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="jfx-notify-completion" class="emby-checkbox" />
+                            <span>Send a notification when an export completes</span>
+                        </label>
+                    </div>
+
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="jfx-notify-failure" class="emby-checkbox" />
+                            <span>Send a notification when an export fails</span>
+                        </label>
+                    </div>
+
+                    <div class="jfx-savebar">
+                        <button is="emby-button" type="button" id="jfx-save" class="raised button-submit emby-button">
+                            <span>Save</span>
+                        </button>
+                        <button is="emby-button" type="button" id="jfx-revert" class="emby-button" hidden>
+                            <span>Discard changes</span>
+                        </button>
+                        <span id="jfx-dirty" class="jfx-dirty" hidden>Unsaved changes</span>
+                    </div>
+                </div>
+                </div>
+
+                <div id="jfx-season-modal" class="jfx-modal" hidden>
+                    <div class="jfx-modal-card" role="dialog" aria-modal="true"
+                         aria-labelledby="jfx-season-modal-title">
+                        <h2 id="jfx-season-modal-title" class="jfx-modal-title"></h2>
+                        <div id="jfx-season-modal-error" class="jfx-banner jfx-error" hidden></div>
+                        <p class="fieldDescription">
+                            Pick the seasons to queue, or choose <strong>All seasons</strong> to queue every
+                            episode of the show. Seasons expand to one job per episode.
+                        </p>
+                        <label class="jfx-all-seasons">
+                            <input id="jfx-all-seasons" type="checkbox">
+                            <span>All seasons</span>
+                        </label>
+                        <ul id="jfx-season-list" class="jfx-season-list"
+                            aria-label="Seasons of this show"></ul>
+                        <div class="jfx-modal-profile">
+                            <label for="jfx-modal-profile">Export profile</label>
+                            <select id="jfx-modal-profile" is="emby-select"
+                                    aria-label="Export profile for this show"></select>
+                        </div>
+                        <div class="jfx-modal-actions">
+                            <button id="jfx-season-continue" type="button" class="jfx-primary">Continue</button>
+                            <button id="jfx-season-cancel" type="button">Cancel</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -346,7 +818,19 @@
                     confirmText: page.querySelector('#jfx-confirm-text'),
                     confirmSamples: page.querySelector('#jfx-confirm-samples'),
                     confirmGo: page.querySelector('#jfx-confirm-go'),
-                    confirmCancel: page.querySelector('#jfx-confirm-cancel')
+                    confirmCancel: page.querySelector('#jfx-confirm-cancel'),
+                    selectAllLabel: page.querySelector('.jfx-selectall'),
+                    panelExport: page.querySelector('#jfx-panel-export'),
+                    panelProfiles: page.querySelector('#jfx-panel-profiles'),
+                    seasonModal: page.querySelector('#jfx-season-modal'),
+                    seasonModalCard: page.querySelector('#jfx-season-modal .jfx-modal-card'),
+                    seasonModalTitle: page.querySelector('#jfx-season-modal-title'),
+                    seasonModalError: page.querySelector('#jfx-season-modal-error'),
+                    seasonList: page.querySelector('#jfx-season-list'),
+                    allSeasons: page.querySelector('#jfx-all-seasons'),
+                    modalProfile: page.querySelector('#jfx-modal-profile'),
+                    seasonContinue: page.querySelector('#jfx-season-continue'),
+                    seasonCancel: page.querySelector('#jfx-season-cancel')
                     };
                 }
 
@@ -358,12 +842,26 @@
                     items: [],
                     // Keyed by normalized id so a selection survives paging and tab switches.
                     selected: {},
+                    // Ids snapshot when a confirmation is asked for, so Plan and
+                    // Export always act on the same selection.
+                    planIds: [],
                     profiles: [],
                     profileId: null,
                     loading: false,
                     refreshing: false,
                     imageUrls: {},
                     searchTimer: null
+                };
+
+                // Season-picker modal state. It is rebuilt from scratch every time
+                // a show is opened, so a selection can never leak from one show
+                // into the next; requestId invalidates a seasons response that
+                // arrives after its modal was closed or replaced.
+                var modal = {
+                    seriesId: null,
+                    seriesName: '',
+                    seasons: [],
+                    requestId: 0
                 };
 
                 function normalizeId(value) {
@@ -538,12 +1036,19 @@
                 }
 
                 // ---------------- library ----------------
+                function queryKey() {
+                    // The request in flight is only still relevant if the tab,
+                    // search term and page offset are unchanged when it lands.
+                    return state.type + '\u0000' + state.search + '\u0000' + state.startIndex;
+                }
+
                 function loadItems() {
                     if (state.loading) {
                         return Promise.resolve();
                     }
 
                     state.loading = true;
+                    var requested = queryKey();
                     els.grid.setAttribute('aria-busy', 'true');
                     showError('');
 
@@ -553,6 +1058,10 @@
                         startIndex: state.startIndex,
                         limit: PAGE_SIZE
                     }).then(function (data) {
+                        if (requested !== queryKey()) {
+                            return; // stale: the tab/search/page changed mid-flight
+                        }
+
                         state.items = (pick(data, 'items') || []).map(function (item) {
                             return {
                                 id: normalizeId(pick(item, 'id')),
@@ -570,6 +1079,10 @@
                         state.total = pick(data, 'totalRecordCount') || 0;
                         render();
                     }, function (error) {
+                        if (requested !== queryKey()) {
+                            return;
+                        }
+
                         showError(error.message);
                         state.items = [];
                         state.total = 0;
@@ -577,6 +1090,11 @@
                     }).then(function () {
                         state.loading = false;
                         els.grid.removeAttribute('aria-busy');
+                        if (requested !== queryKey()) {
+                            // The tab/search/page changed while this request was
+                            // in flight: load what is current now.
+                            return loadItems();
+                        }
                     });
                 }
 
@@ -628,19 +1146,26 @@
                 }
 
                 function buildCard(item) {
+                    // On the TV Shows tab a card opens the season picker instead of
+                    // joining the multi-select grid, so series carry no checkbox.
+                    var isSeriesCard = state.type === 'TVShows';
                     var card = document.createElement('div');
-                    card.className = 'jfx-card' + (state.selected[item.id] ? ' is-selected' : '');
+                    card.className = 'jfx-card' +
+                        (!isSeriesCard && state.selected[item.id] ? ' is-selected' : '');
                     card.setAttribute('data-item-id', item.id);
 
-                    var checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.checked = !!state.selected[item.id];
-                    checkbox.setAttribute('aria-label', 'Select ' + item.name);
-                    checkbox.addEventListener('click', function (event) {
-                        event.stopPropagation();
-                        toggleItem(item, checkbox.checked);
-                    });
-                    card.appendChild(checkbox);
+                    var checkbox = null;
+                    if (!isSeriesCard) {
+                        checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.checked = !!state.selected[item.id];
+                        checkbox.setAttribute('aria-label', 'Select ' + item.name);
+                        checkbox.addEventListener('click', function (event) {
+                            event.stopPropagation();
+                            toggleItem(item, checkbox.checked);
+                        });
+                        card.appendChild(checkbox);
+                    }
 
                     if (item.hasImage && item.imageItemId) {
                         var img = document.createElement('img');
@@ -686,6 +1211,11 @@
 
                     card.appendChild(body);
                     card.addEventListener('click', function () {
+                        if (isSeriesCard) {
+                            openSeasonModal(item);
+                            return;
+                        }
+
                         toggleItem(item, !state.selected[item.id]);
                         checkbox.checked = !!state.selected[item.id];
                     });
@@ -739,14 +1269,19 @@
                 }
 
                 // ---------------- plan and export ----------------
-                function payload() {
+                function payload(itemIds) {
                     return {
-                        itemIds: selectedIds(),
+                        itemIds: itemIds,
                         profileId: state.profileId
                     };
                 }
 
-                function askConfirmation() {
+                // `ids` defaults to the grid selection; the TV season modal passes
+                // the chosen season ids (or the series id for "All seasons")
+                // explicitly. The ids are snapshotted so the confirmation and the
+                // enqueue that follows it always describe the same selection.
+                function askConfirmation(ids) {
+                    var selection = ids || selectedIds();
                     showError('');
                     showResult('');
                     hideConfirm();
@@ -756,13 +1291,14 @@
                         return;
                     }
 
-                    if (selectedIds().length === 0) {
+                    if (selection.length === 0) {
                         showError('Select at least one movie, show or season.');
                         return;
                     }
 
+                    state.planIds = selection;
                     els.exportButton.disabled = true;
-                    request('POST', PLAN_URL, null, payload()).then(function (data) {
+                    request('POST', PLAN_URL, null, payload(selection)).then(function (data) {
                         var jobCount = pick(data, 'jobCount') || 0;
                         var duplicateCount = pick(data, 'duplicateCount') || 0;
                         var missingCount = pick(data, 'missingCount') || 0;
@@ -819,8 +1355,9 @@
                 }
 
                 function confirmExport() {
+                    var selection = state.planIds || [];
                     els.confirmGo.disabled = true;
-                    request('POST', EXPORT_URL, null, payload()).then(function (data) {
+                    request('POST', EXPORT_URL, null, payload(selection)).then(function (data) {
                         var queued = pick(data, 'queuedCount') || 0;
                         var duplicates = pick(data, 'duplicateCount') || 0;
                         var problems = pick(data, 'problems') || [];
@@ -840,7 +1377,11 @@
                             escapeHtml(message) +
                             ' <a href="' + STATUS_PAGE + '">Open the export status page</a>.');
 
-                        state.selected = {};
+                        // Drop only the ids that were just queued, so a grid
+                        // selection staged for a later export survives a TV queue.
+                        selection.forEach(function (id) {
+                            delete state.selected[id];
+                        });
                         hideConfirm();
                         showWarning(problems);
                         if (state.items.length) {
@@ -861,6 +1402,221 @@
                         .replace(/"/g, '&quot;');
                 }
 
+                // ---------------- season picker (TV Shows) ----------------
+                function showModalError(message) {
+                    els.seasonModalError.textContent = message || '';
+                    els.seasonModalError.hidden = !message;
+                }
+
+                function pageBackground() {
+                    // The dialog borrows the page's own background colour so it
+                    // follows whichever dashboard theme is active.
+                    var node = document.body;
+                    while (node) {
+                        var background = window.getComputedStyle(node).backgroundColor;
+                        if (background && background !== 'transparent' && background !== 'rgba(0, 0, 0, 0)') {
+                            return background;
+                        }
+
+                        node = node.parentElement;
+                    }
+
+                    return '#ffffff';
+                }
+
+                function seasonLabel(season) {
+                    var label;
+                    if (season.seasonNumber !== null && season.seasonNumber !== undefined) {
+                        label = 'Season ' + season.seasonNumber;
+                    } else {
+                        label = season.name || 'Specials';
+                    }
+
+                    if (season.episodeCount !== null && season.episodeCount !== undefined) {
+                        label += ' \u00b7 ' + season.episodeCount +
+                            (season.episodeCount === 1 ? ' episode' : ' episodes');
+                    }
+
+                    return label;
+                }
+
+                function renderSeasonList() {
+                    els.seasonList.innerHTML = '';
+                    modal.seasons.forEach(function (season) {
+                        var item = document.createElement('li');
+                        item.className = 'jfx-season-option';
+
+                        var label = document.createElement('label');
+                        var box = document.createElement('input');
+                        box.type = 'checkbox';
+                        box.className = 'jfx-season-check';
+                        box.setAttribute('data-season-id', season.id);
+                        box.setAttribute('data-season-label', seasonLabel(season));
+                        box.addEventListener('change', function () {
+                            if (!box.checked) {
+                                els.allSeasons.checked = false;
+                            } else {
+                                var boxes = els.seasonList.querySelectorAll('.jfx-season-check');
+                                els.allSeasons.checked = Array.prototype.every.call(boxes, function (other) {
+                                    return other.checked;
+                                });
+                            }
+
+                            refreshModalContinue();
+                        });
+
+                        var text = document.createElement('span');
+                        text.className = 'jfx-season-text';
+                        text.textContent = seasonLabel(season);
+
+                        label.appendChild(box);
+                        label.appendChild(text);
+                        item.appendChild(label);
+                        els.seasonList.appendChild(item);
+                    });
+                }
+
+                function checkedSeasonIds() {
+                    return Array.prototype.filter
+                        .call(els.seasonList.querySelectorAll('.jfx-season-check'), function (box) {
+                            return box.checked;
+                        })
+                        .map(function (box) {
+                            return box.getAttribute('data-season-id');
+                        });
+                }
+
+                function refreshModalContinue() {
+                    var hasProfile = !!state.profileId;
+                    var hasSelection = els.allSeasons.checked || checkedSeasonIds().length > 0;
+                    els.seasonContinue.disabled =
+                        !hasProfile || !hasSelection || modal.seasons.length === 0;
+                }
+
+                function fillModalProfile() {
+                    var enabled = state.profiles.filter(function (profile) {
+                        return profile.enabled;
+                    });
+
+                    els.modalProfile.innerHTML = '';
+                    if (enabled.length === 0) {
+                        els.modalProfile.disabled = true;
+                        var placeholder = document.createElement('option');
+                        placeholder.value = '';
+                        placeholder.textContent = 'No profiles configured';
+                        els.modalProfile.appendChild(placeholder);
+                        return;
+                    }
+
+                    els.modalProfile.disabled = false;
+                    enabled.forEach(function (profile) {
+                        var option = document.createElement('option');
+                        option.value = profile.id;
+                        option.textContent = profile.name + (profile.isDefault ? ' (default)' : '');
+                        els.modalProfile.appendChild(option);
+                    });
+
+                    var chosen = enabled.filter(function (profile) {
+                        return profile.id === state.profileId;
+                    })[0] || enabled[0];
+                    els.modalProfile.value = chosen.id;
+                }
+
+                function closeSeasonModal() {
+                    // Invalidate a seasons response still in flight for this show.
+                    modal.requestId += 1;
+                    els.seasonModal.hidden = true;
+                    showModalError('');
+                }
+
+                function openSeasonModal(item) {
+                    // Rebuilt on every open: seasons ticked for one show must never
+                    // appear ticked for the next one, and a stale response for a
+                    // closed modal must never fill the new one.
+                    var requestId = ++modal.requestId;
+                    modal.seriesId = item.id;
+                    modal.seriesName = item.name;
+                    modal.seasons = [];
+
+                    els.seasonModalTitle.textContent = 'Export ' + item.name;
+                    els.seasonList.innerHTML = '';
+                    els.allSeasons.checked = false;
+                    els.seasonModal.setAttribute('aria-busy', 'true');
+                    showModalError('');
+                    fillModalProfile();
+                    els.seasonModalCard.style.backgroundColor = pageBackground();
+                    els.seasonModal.hidden = false;
+                    els.seasonCancel.focus();
+                    refreshModalContinue();
+
+                    request('GET', ITEMS_URL, {
+                        type: 'Seasons',
+                        parentId: modal.seriesId,
+                        startIndex: 0,
+                        limit: 100
+                    }).then(function (data) {
+                        if (requestId !== modal.requestId) {
+                            return;
+                        }
+
+                        modal.seasons = (pick(data, 'items') || []).map(function (season) {
+                            return {
+                                id: normalizeId(pick(season, 'id')),
+                                name: pick(season, 'name') || '',
+                                seasonNumber: pick(season, 'seasonNumber'),
+                                episodeCount: pick(season, 'episodeCount')
+                            };
+                        });
+                        modal.seasons.sort(function (left, right) {
+                            var a = left.seasonNumber === null ||
+                                left.seasonNumber === undefined ? 0 : left.seasonNumber;
+                            var b = right.seasonNumber === null ||
+                                right.seasonNumber === undefined ? 0 : right.seasonNumber;
+                            return a - b;
+                        });
+
+                        els.seasonModal.removeAttribute('aria-busy');
+                        if (modal.seasons.length === 0) {
+                            showModalError('This show has no seasons in the library.');
+                        } else {
+                            renderSeasonList();
+                        }
+
+                        refreshModalContinue();
+                    }, function (error) {
+                        if (requestId !== modal.requestId) {
+                            return;
+                        }
+
+                        els.seasonModal.removeAttribute('aria-busy');
+                        showModalError(error.message);
+                        refreshModalContinue();
+                    });
+                }
+
+                function continueFromSeasonModal() {
+                    var ids;
+                    if (els.allSeasons.checked) {
+                        // "All seasons" submits the series id and lets the server
+                        // expand every episode, specials included.
+                        ids = [modal.seriesId];
+                    } else {
+                        ids = checkedSeasonIds();
+                        if (ids.length === 0) {
+                            showModalError('Select at least one season, or choose All seasons.');
+                            return;
+                        }
+                    }
+
+                    if (!state.profileId) {
+                        showModalError('Choose an export profile first.');
+                        return;
+                    }
+
+                    closeSeasonModal();
+                    askConfirmation(ids);
+                }
+
                 // ---------------- wiring ----------------
                 function selectType(type) {
                     if (state.type === type) {
@@ -870,14 +1626,37 @@
                     state.type = type;
                     state.startIndex = 0;
                     hideConfirm();
+                    closeSeasonModal();
                     Array.prototype.forEach.call(page.querySelectorAll('.jfx-tab'), function (tab) {
                         tab.classList.toggle('is-active', tab.getAttribute('data-type') === type);
                     });
+
+                    // Grid selection only applies to the Movies tab; the TV Shows
+                    // tab queues through the season modal instead.
+                    var isTv = type === 'TVShows';
+                    els.selectAllLabel.hidden = isTv;
+                    els.selection.hidden = isTv;
+                    els.clear.hidden = isTv;
 
                     return loadItems();
                 }
 
                 function init() {
+                    // Page-level tabs: Export (browse/queue) and Profiles (settings).
+                    Array.prototype.forEach.call(page.querySelectorAll('.jfx-page-tab'), function (tab) {
+                        tab.addEventListener('click', function (event) {
+                            event.preventDefault();
+                            var target = tab.getAttribute('data-panel');
+                            Array.prototype.forEach.call(page.querySelectorAll('.jfx-page-tab'), function (other) {
+                                var active = other === tab;
+                                other.classList.toggle('is-active', active);
+                                other.setAttribute('aria-selected', active ? 'true' : 'false');
+                            });
+                            els.panelExport.hidden = target !== 'export';
+                            els.panelProfiles.hidden = target !== 'profiles';
+                        });
+                    });
+
                     Array.prototype.forEach.call(page.querySelectorAll('.jfx-tab'), function (tab) {
                         tab.addEventListener('click', function (event) {
                             event.preventDefault();
@@ -950,6 +1729,53 @@
                         hideConfirm();
                     });
 
+                    // Season picker: Cancel and the backdrop queue nothing; the
+                    // primary action runs the normal Plan confirmation.
+                    els.seasonCancel.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        closeSeasonModal();
+                    });
+
+                    els.seasonContinue.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        continueFromSeasonModal();
+                    });
+
+                    els.seasonModal.addEventListener('click', function (event) {
+                        if (event.target === els.seasonModal) {
+                            closeSeasonModal();
+                        }
+                    });
+
+                    els.seasonModal.addEventListener('keydown', function (event) {
+                        if (event.key === 'Escape') {
+                            closeSeasonModal();
+                        }
+                    });
+
+                    els.allSeasons.addEventListener('change', function () {
+                        var checked = els.allSeasons.checked;
+                        Array.prototype.forEach.call(
+                            els.seasonList.querySelectorAll('.jfx-season-check'),
+                            function (box) {
+                                box.checked = checked;
+                            });
+                        refreshModalContinue();
+                    });
+
+                    // The modal reuses the page's profile list; changing it here
+                    // changes it for the queued export too.
+                    els.modalProfile.addEventListener('change', function () {
+                        if (!els.modalProfile.value) {
+                            return;
+                        }
+
+                        state.profileId = els.modalProfile.value;
+                        els.profile.value = state.profileId;
+                        hideConfirm();
+                        refreshModalContinue();
+                    });
+
                     page.addEventListener('pageshow', refresh);
 
                     // The dashboard may have dispatched pageshow before this script
@@ -1001,6 +1827,1035 @@
                     start(existingPage);
                 } else {
                     whenPageReady(start);
+                }
+            })();
+        </script>
+        <script type="text/javascript">
+            (function () {
+                'use strict';
+
+                var pluginUniqueId = 'b0473c79-36c1-4386-9006-f941031bbea2';
+                var VALIDATE_URL = 'JellyfinExporter/Profiles/Validate';
+                var PROBE_URL = 'JellyfinExporter/Profiles/ProbeDirectory';
+                var MAX_CONCURRENT_LIMIT = 8;
+                var JOB_HISTORY_LIMIT = 5000;
+
+                // Enum member names are the wire format; the numeric fallback keeps the
+                // page working if a serializer echoes integers instead.
+                var FORMATS = [
+                    { value: 'H264', label: 'H.264 / AVC' },
+                    { value: 'H265', label: 'H.265 / HEVC' },
+                    { value: 'AV1', label: 'AV1' }
+                ];
+                var RESOLUTIONS = [
+                    { value: 'Resolution4K', label: '4K (3840x2160)' },
+                    { value: 'Resolution1080p', label: '1080p (1920x1080)' },
+                    { value: 'Resolution720p', label: '720p (1280x720)' },
+                    { value: 'Resolution480p', label: '480p (854x480)' }
+                ];
+                var AUDIO = [
+                    { value: 'Original', label: 'Original (copy)' },
+                    { value: 'Surround51', label: '5.1 (AAC)' },
+                    { value: 'Stereo', label: 'Stereo (AAC)' }
+                ];
+
+                // The plugin configuration endpoint binds JSON case-sensitively to
+                // the C# property names, so a save has to echo the exact key casing
+                // the server used when it handed the configuration to this page.
+                var PROFILE_FIELDS = [
+                    { server: 'Id', local: 'id' },
+                    { server: 'Name', local: 'name' },
+                    { server: 'Format', local: 'format' },
+                    { server: 'Resolution', local: 'resolution' },
+                    { server: 'AudioChannels', local: 'audioChannels' },
+                    { server: 'OutputDirectory', local: 'outputDirectory' },
+                    { server: 'Enabled', local: 'enabled' }
+                ];
+                var CONFIG_FIELDS = [
+                    { server: 'MaxConcurrentExports', local: 'maxConcurrentExports' },
+                    { server: 'JobHistoryLimit', local: 'jobHistoryLimit' },
+                    { server: 'NotifyOnCompletion', local: 'notifyOnCompletion' },
+                    { server: 'NotifyOnFailure', local: 'notifyOnFailure' },
+                    { server: 'DefaultProfileId', local: 'defaultProfileId' }
+                ];
+
+                // The settings panel now lives inside the merged Exporter page,
+                // whose root the dashboard may inject after this script runs, so
+                // resolve the page and its elements lazily like the browse script.
+                var page = null;
+                var els = {};
+
+                function buildElements() {
+                    els = {
+                    errors: page.querySelector('#jfx-config-errors'),
+                    noProfiles: page.querySelector('#jfx-no-profiles'),
+                    table: page.querySelector('#jfx-profiles-table'),
+                    body: page.querySelector('#jfx-profiles-body'),
+                    editor: page.querySelector('#jfx-editor'),
+                    editorTitle: page.querySelector('#jfx-editor-title'),
+                    form: page.querySelector('#jfx-profile-form'),
+                    name: page.querySelector('#jfx-name'),
+                    nameError: page.querySelector('#jfx-name-error'),
+                    format: page.querySelector('#jfx-format'),
+                    formatError: page.querySelector('#jfx-format-error'),
+                    resolution: page.querySelector('#jfx-resolution'),
+                    resolutionError: page.querySelector('#jfx-resolution-error'),
+                    audio: page.querySelector('#jfx-audio'),
+                    audioError: page.querySelector('#jfx-audio-error'),
+                    directory: page.querySelector('#jfx-directory'),
+                    directoryError: page.querySelector('#jfx-directory-error'),
+                    directoryOk: page.querySelector('#jfx-directory-ok'),
+                    enabled: page.querySelector('#jfx-enabled'),
+                    addProfile: page.querySelector('#jfx-add-profile'),
+                    cancelProfile: page.querySelector('#jfx-cancel-profile'),
+                    maxExports: page.querySelector('#jfx-max-exports'),
+                    maxExportsError: page.querySelector('#jfx-max-exports-error'),
+                    historyLimit: page.querySelector('#jfx-history-limit'),
+                    historyLimitError: page.querySelector('#jfx-history-limit-error'),
+                    openStatus: page.querySelector('#jfx-open-status'),
+                    openStatusLink: page.querySelector('#jfx-open-status-link'),
+                    notifyCompletion: page.querySelector('#jfx-notify-completion'),
+                    notifyFailure: page.querySelector('#jfx-notify-failure'),
+                    save: page.querySelector('#jfx-save'),
+                    revert: page.querySelector('#jfx-revert'),
+                    dirty: page.querySelector('#jfx-dirty')
+                };
+                }
+
+                function startSettings(root) {
+                    page = root;
+                    buildElements();
+                    init();
+                }
+
+                var state = {
+                    server: null,
+                    serverRaw: null,
+                    draft: null,
+                    editingId: null,
+                    issues: [],
+                    dirty: false,
+                    keys: {}
+                };
+
+                function newId() {
+                    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                        return normalizeId(window.crypto.randomUUID());
+                    }
+
+                    var generated = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                        var r = Math.random() * 16 | 0;
+                        var v = c === 'x' ? r : ((r & 0x3) | 0x8);
+                        return v.toString(16);
+                    });
+                    return normalizeId(generated);
+                }
+
+                // The server serializes Guids without dashes; compare ids in one form.
+                function normalizeId(value) {
+                    return String(value || '').replace(/[^0-9a-f]/gi, '').toLowerCase();
+                }
+
+                function sameId(left, right) {
+                    var a = normalizeId(left);
+                    var b = normalizeId(right);
+                    return a.length > 0 && a === b;
+                }
+
+                function pick(object, name) {
+                    // Plugin configuration JSON has been PascalCase and camelCase
+                    // across Jellyfin releases; read whichever the server sent.
+                    if (!object) {
+                        return undefined;
+                    }
+
+                    if (object[name] !== undefined) {
+                        return object[name];
+                    }
+
+                    var target = name.toLowerCase();
+                    for (var key in object) {
+                        if (Object.prototype.hasOwnProperty.call(object, key) && key.toLowerCase() === target) {
+                            return object[key];
+                        }
+                    }
+
+                    return undefined;
+                }
+
+                function detectKey(object, name, fallback) {
+                    if (!object) {
+                        return fallback;
+                    }
+
+                    var target = name.toLowerCase();
+                    for (var key in object) {
+                        if (Object.prototype.hasOwnProperty.call(object, key) && key.toLowerCase() === target) {
+                            return key;
+                        }
+                    }
+
+                    return fallback;
+                }
+
+                function serverKey(field) {
+                    return state.keys[field] || field;
+                }
+
+                function toServerProfile(profile) {
+                    var out = {};
+                    PROFILE_FIELDS.forEach(function (field) {
+                        out[serverKey(field.server)] = profile[field.local];
+                    });
+                    return out;
+                }
+
+                function canonical(value, options, fallback) {
+                    if (value === null || value === undefined || value === '') {
+                        return fallback;
+                    }
+
+                    var text = String(value);
+                    for (var i = 0; i < options.length; i++) {
+                        if (options[i].value.toLowerCase() === text.toLowerCase()) {
+                            return options[i].value;
+                        }
+                    }
+
+                    var index = parseInt(text, 10);
+                    if (!isNaN(index) && options[index]) {
+                        return options[index].value;
+                    }
+
+                    return fallback;
+                }
+
+                function labelFor(options, value) {
+                    for (var i = 0; i < options.length; i++) {
+                        if (options[i].value === value) {
+                            return options[i].label;
+                        }
+                    }
+
+                    return value;
+                }
+
+                function normalizeProfile(raw) {
+                    raw = raw || {};
+                    return {
+                        id: normalizeId(pick(raw, 'Id')) || newId(),
+                        name: (pick(raw, 'Name') || '').toString().trim(),
+                        format: canonical(pick(raw, 'Format'), FORMATS, FORMATS[0].value),
+                        resolution: canonical(pick(raw, 'Resolution'), RESOLUTIONS, RESOLUTIONS[1].value),
+                        audioChannels: canonical(pick(raw, 'AudioChannels'), AUDIO, AUDIO[0].value),
+                        outputDirectory: (pick(raw, 'OutputDirectory') || '').toString().trim(),
+                        enabled: pick(raw, 'Enabled') === undefined ? true : !!pick(raw, 'Enabled')
+                    };
+                }
+
+                function normalizeConfig(raw) {
+                    raw = raw || {};
+                    var max = parseInt(pick(raw, 'MaxConcurrentExports'), 10);
+                    if (isNaN(max) || max < 1) {
+                        max = 1;
+                    }
+
+                    var history = parseInt(pick(raw, 'JobHistoryLimit'), 10);
+                    if (isNaN(history) || history < 1) {
+                        history = 200;
+                    }
+
+                    var notifyOnCompletion = pick(raw, 'NotifyOnCompletion');
+                    var notifyOnFailure = pick(raw, 'NotifyOnFailure');
+
+                    return {
+                        profiles: (pick(raw, 'Profiles') || []).map(normalizeProfile),
+                        defaultProfileId: normalizeId(pick(raw, 'DefaultProfileId')) || null,
+                        maxConcurrentExports: Math.min(max, MAX_CONCURRENT_LIMIT),
+                        jobHistoryLimit: Math.min(history, JOB_HISTORY_LIMIT),
+                        notifyOnCompletion: notifyOnCompletion === undefined ? true : !!notifyOnCompletion,
+                        notifyOnFailure: notifyOnFailure === undefined ? true : !!notifyOnFailure
+                    };
+                }
+
+                function copyConfig(config) {
+                    var copy = normalizeConfig(config);
+                    return {
+                        profiles: copy.profiles.map(function (profile) {
+                            return normalizeProfile(profile);
+                        }),
+                        defaultProfileId: copy.defaultProfileId,
+                        maxConcurrentExports: copy.maxConcurrentExports,
+                        jobHistoryLimit: copy.jobHistoryLimit,
+                        notifyOnCompletion: copy.notifyOnCompletion,
+                        notifyOnFailure: copy.notifyOnFailure
+                    };
+                }
+
+                function profileById(id) {
+                    return state.draft.profiles.filter(function (profile) {
+                        return sameId(profile.id, id);
+                    })[0] || null;
+                }
+
+                function issuesFor(profileId, field) {
+                    if (!profileId) {
+                        return state.issues.filter(function (issue) {
+                            return !issue.profileId && issue.field === field;
+                        });
+                    }
+
+                    return state.issues.filter(function (issue) {
+                        return sameId(issue.profileId, profileId) && issue.field === field;
+                    });
+                }
+
+                function setDirty(dirty) {
+                    state.dirty = dirty;
+                    els.dirty.hidden = !dirty;
+                    els.revert.hidden = !dirty;
+                }
+
+                function fillSelect(select, options) {
+                    select.innerHTML = '';
+                    options.forEach(function (option) {
+                        var item = document.createElement('option');
+                        item.value = option.value;
+                        item.textContent = option.label;
+                        select.appendChild(item);
+                    });
+                }
+
+                function buildPayload() {
+                    return {
+                        profiles: state.draft.profiles.map(function (profile) {
+                            return {
+                                id: profile.id,
+                                name: profile.name,
+                                format: profile.format,
+                                resolution: profile.resolution,
+                                audioChannels: profile.audioChannels,
+                                outputDirectory: profile.outputDirectory,
+                                enabled: profile.enabled
+                            };
+                        }),
+                        defaultProfileId: state.draft.defaultProfileId,
+                        maxConcurrentExports: state.draft.maxConcurrentExports,
+                        notifyOnCompletion: state.draft.notifyOnCompletion,
+                        notifyOnFailure: state.draft.notifyOnFailure
+                    };
+                }
+
+                function refreshDirty() {
+                    if (!state.server) {
+                        return;
+                    }
+
+                    var saved = normalizeConfig(state.server);
+                    var savedJson = JSON.stringify({
+                        profiles: saved.profiles,
+                        defaultProfileId: saved.defaultProfileId,
+                        maxConcurrentExports: saved.maxConcurrentExports,
+                        notifyOnCompletion: saved.notifyOnCompletion,
+                        notifyOnFailure: saved.notifyOnFailure
+                    });
+                    setDirty(savedJson !== JSON.stringify(buildPayload()));
+                }
+
+                function renderIssues() {
+                    var serious = state.issues.filter(function (issue) {
+                        return issue.field !== 'DefaultProfileId';
+                    });
+
+                    if (serious.length === 0) {
+                        els.errors.hidden = true;
+                        els.errors.innerHTML = '';
+                        return;
+                    }
+
+                    els.errors.hidden = false;
+                    els.errors.innerHTML = '';
+                    var title = document.createElement('strong');
+                    title.textContent = 'Fix these before saving:';
+                    els.errors.appendChild(title);
+                    var list = document.createElement('ul');
+                    serious.forEach(function (issue) {
+                        var owner = issue.profileId ? profileById(issue.profileId) : null;
+                        var where = owner ? (owner.name || 'Unnamed profile') : 'Settings';
+                        var item = document.createElement('li');
+                        item.textContent = where + ': ' + issue.message;
+                        list.appendChild(item);
+                    });
+                    els.errors.appendChild(list);
+                }
+
+                function issueText(profileId, field) {
+                    return issuesFor(profileId, field).map(function (issue) {
+                        return issue.message;
+                    }).join(' ');
+                }
+
+                function renderTable() {
+                    var profiles = state.draft.profiles;
+                    els.table.hidden = profiles.length === 0;
+                    els.noProfiles.hidden = profiles.length !== 0;
+                    els.body.innerHTML = '';
+
+                    profiles.forEach(function (profile) {
+                        var row = document.createElement('tr');
+                        row.setAttribute('data-profile-id', profile.id);
+
+                        var nameCell = document.createElement('td');
+                        var nameText = document.createElement('span');
+                        nameText.textContent = profile.name || '(unnamed)';
+                        nameCell.appendChild(nameText);
+                        if (sameId(state.draft.defaultProfileId, profile.id)) {
+                            var badge = document.createElement('span');
+                            badge.className = 'jfx-badge';
+                            badge.textContent = 'default';
+                            nameCell.appendChild(document.createTextNode(' '));
+                            nameCell.appendChild(badge);
+                        }
+
+                        if (!profile.enabled) {
+                            var disabledHint = document.createElement('div');
+                            disabledHint.className = 'fieldDescription';
+                            disabledHint.textContent = 'disabled';
+                            nameCell.appendChild(disabledHint);
+                        }
+
+                        if (issueText(profile.id, 'Name')) {
+                            var nameError = document.createElement('div');
+                            nameError.className = 'jfx-field-error';
+                            nameError.textContent = issueText(profile.id, 'Name');
+                            nameCell.appendChild(nameError);
+                        }
+
+                        var formatCell = document.createElement('td');
+                        formatCell.textContent = labelFor(FORMATS, profile.format);
+
+                        var resolutionCell = document.createElement('td');
+                        resolutionCell.textContent = labelFor(RESOLUTIONS, profile.resolution);
+
+                        var audioCell = document.createElement('td');
+                        audioCell.textContent = labelFor(AUDIO, profile.audioChannels);
+
+                        var dirCell = document.createElement('td');
+                        var dirText = document.createElement('span');
+                        dirText.className = 'jfx-dir';
+                        dirText.textContent = profile.outputDirectory || '(none)';
+                        dirCell.appendChild(dirText);
+                        if (issueText(profile.id, 'OutputDirectory')) {
+                            var dirError = document.createElement('div');
+                            dirError.className = 'jfx-field-error';
+                            dirError.textContent = issueText(profile.id, 'OutputDirectory');
+                            dirCell.appendChild(dirError);
+                        }
+
+                        var defaultCell = document.createElement('td');
+                        var radio = document.createElement('input');
+                        radio.type = 'radio';
+                        radio.name = 'jfx-default-profile';
+                        radio.setAttribute('aria-label', 'Use ' + (profile.name || 'this profile') + ' as the default');
+                        radio.checked = sameId(state.draft.defaultProfileId, profile.id);
+                        radio.addEventListener('change', function () {
+                            state.draft.defaultProfileId = normalizeId(profile.id);
+                            state.issues = state.issues.filter(function (issue) {
+                                return issue.field !== 'DefaultProfileId';
+                            });
+                            render();
+                        });
+                        defaultCell.appendChild(radio);
+
+                        var actionsCell = document.createElement('td');
+                        actionsCell.className = 'jfx-actions';
+
+                        var edit = document.createElement('button');
+                        edit.type = 'button';
+                        edit.className = 'raised emby-button';
+                        edit.textContent = 'Edit';
+                        edit.addEventListener('click', function () {
+                            openEditor(profile.id);
+                        });
+
+                        var remove = document.createElement('button');
+                        remove.type = 'button';
+                        remove.className = 'raised emby-button';
+                        remove.textContent = 'Delete';
+                        remove.addEventListener('click', function () {
+                            deleteProfile(profile.id);
+                        });
+
+                        actionsCell.appendChild(edit);
+                        actionsCell.appendChild(document.createTextNode(' '));
+                        actionsCell.appendChild(remove);
+
+                        row.appendChild(nameCell);
+                        row.appendChild(formatCell);
+                        row.appendChild(resolutionCell);
+                        row.appendChild(audioCell);
+                        row.appendChild(dirCell);
+                        row.appendChild(defaultCell);
+                        row.appendChild(actionsCell);
+                        els.body.appendChild(row);
+                    });
+                }
+
+                function renderGlobal() {
+                    els.maxExports.value = state.draft.maxConcurrentExports;
+                    els.historyLimit.value = state.draft.jobHistoryLimit;
+                    els.notifyCompletion.checked = state.draft.notifyOnCompletion;
+                    els.notifyFailure.checked = state.draft.notifyOnFailure;
+                }
+
+                function render() {
+                    renderTable();
+                    renderGlobal();
+                    renderIssues();
+                    refreshDirty();
+                }
+
+                function clearIssue(profileId, field) {
+                    state.issues = state.issues.filter(function (issue) {
+                        return !(sameId(issue.profileId, profileId) && issue.field === field);
+                    });
+                }
+
+                function openEditor(profileId) {
+                    state.editingId = profileId;
+                    els.nameError.textContent = '';
+                    els.formatError.textContent = '';
+                    els.resolutionError.textContent = '';
+                    els.audioError.textContent = '';
+                    els.directoryError.textContent = '';
+                    els.directoryOk.textContent = '';
+
+                    if (profileId) {
+                        var profile = profileById(profileId);
+                        if (!profile) {
+                            return;
+                        }
+
+                        els.editorTitle.textContent = 'Edit profile';
+                        els.name.value = profile.name;
+                        els.format.value = profile.format;
+                        els.resolution.value = profile.resolution;
+                        els.audio.value = profile.audioChannels;
+                        els.directory.value = profile.outputDirectory;
+                        els.enabled.checked = profile.enabled;
+                        els.nameError.textContent = issueText(profileId, 'Name');
+                        els.directoryError.textContent = issueText(profileId, 'OutputDirectory');
+                    } else {
+                        els.editorTitle.textContent = 'New profile';
+                        els.name.value = '';
+                        els.format.value = FORMATS[0].value;
+                        els.resolution.value = RESOLUTIONS[1].value;
+                        els.audio.value = AUDIO[0].value;
+                        els.directory.value = '';
+                        els.enabled.checked = true;
+                    }
+
+                    els.editor.hidden = false;
+                    els.name.focus();
+                }
+
+                function closeEditor() {
+                    state.editingId = null;
+                    els.editor.hidden = true;
+                }
+
+                function localIssuesFor(profile, profiles) {
+                    var issues = [];
+                    var name = (profile.name || '').trim();
+                    if (!name) {
+                        issues.push({ field: 'Name', message: 'A profile name is required.' });
+                    } else if (name.length > 64) {
+                        issues.push({ field: 'Name', message: 'Profile names are limited to 64 characters.' });
+                    } else {
+                        var clash = profiles.some(function (other) {
+                            return other.id !== profile.id &&
+                                (other.name || '').trim().toLowerCase() === name.toLowerCase();
+                        });
+                        if (clash) {
+                            issues.push({ field: 'Name', message: 'Another profile already uses this name.' });
+                        }
+                    }
+
+                    var directory = (profile.outputDirectory || '').trim();
+                    if (!directory) {
+                        issues.push({ field: 'OutputDirectory', message: 'An output directory is required.' });
+                    } else if (!/^(\/|[A-Za-z]:[\\/]|\\\\)/.test(directory)) {
+                        issues.push({
+                            field: 'OutputDirectory',
+                            message: 'The output directory must be an absolute path, for example /media/exports.'
+                        });
+                    }
+
+                    return issues;
+                }
+
+                function readEditor() {
+                    return {
+                        id: state.editingId || newId(),
+                        name: els.name.value.trim(),
+                        format: els.format.value,
+                        resolution: els.resolution.value,
+                        audioChannels: els.audio.value,
+                        outputDirectory: els.directory.value.trim(),
+                        enabled: els.enabled.checked
+                    };
+                }
+
+                function setEditorIssues(issues) {
+                    var byField = {};
+                    issues.forEach(function (issue) {
+                        byField[issue.field] = (byField[issue.field] || []).concat(issue.message);
+                    });
+
+                    els.nameError.textContent = (byField.Name || []).join(' ');
+                    els.formatError.textContent = (byField.Format || []).join(' ');
+                    els.resolutionError.textContent = (byField.Resolution || []).join(' ');
+                    els.audioError.textContent = (byField.AudioChannels || []).join(' ');
+                    els.directoryError.textContent = (byField.OutputDirectory || []).join(' ');
+                    if (issues.length === 0) {
+                        els.directoryOk.textContent = '';
+                    }
+                }
+
+                function probeDirectory(profile) {
+                    if (!profile || !profile.outputDirectory) {
+                        return;
+                    }
+
+                    var targetId = profile.id;
+                    ApiClient.ajax({
+                        type: 'POST',
+                        url: ApiClient.getUrl(PROBE_URL),
+                        data: JSON.stringify({ path: profile.outputDirectory }),
+                        contentType: 'application/json',
+                        dataType: 'json'
+                    }).then(function (result) {
+                        var valid = pick(result, 'Valid') !== false;
+                        var message = pick(result, 'Message') || 'The output directory is not usable.';
+                        var willBeCreated = !!pick(result, 'WillBeCreated');
+
+                        state.issues = state.issues.filter(function (issue) {
+                            return !(sameId(issue.profileId, targetId) && issue.field === 'OutputDirectory');
+                        });
+
+                        var hint = '';
+                        if (!valid) {
+                            state.issues.push({
+                                profileId: targetId,
+                                field: 'OutputDirectory',
+                                message: message
+                            });
+                        } else if (willBeCreated) {
+                            hint = 'Directory does not exist yet and will be created on the first export.';
+                        }
+
+                        renderTable();
+                        renderIssues();
+
+                        if (sameId(state.editingId, targetId)) {
+                            els.directoryError.textContent = valid ? '' : message;
+                            els.directoryOk.textContent = valid ? hint : '';
+                        }
+                    }, function () {
+                        // Probe endpoint unreachable (older build). Saving is still guarded
+                        // by the server-side directory check.
+                    });
+                }
+
+                function applyProfile(event) {
+                    if (event) {
+                        event.preventDefault();
+                    }
+
+                    var candidate = readEditor();
+                    var local = localIssuesFor(candidate, state.draft.profiles);
+                    if (local.length) {
+                        setEditorIssues(local);
+                        return false;
+                    }
+
+                    setEditorIssues([]);
+
+                    var existing = profileById(candidate.id);
+                    if (existing) {
+                        state.draft.profiles = state.draft.profiles.map(function (profile) {
+                            return sameId(profile.id, candidate.id) ? candidate : profile;
+                        });
+                    } else {
+                        state.draft.profiles.push(candidate);
+                    }
+
+                    if (!state.draft.defaultProfileId) {
+                        state.draft.defaultProfileId = candidate.id;
+                    }
+
+                    clearIssue(candidate.id, 'Name');
+                    clearIssue(candidate.id, 'OutputDirectory');
+                    closeEditor();
+                    render();
+                    // Ask the server whether this directory is really writable.
+                    probeDirectory(candidate);
+                    return false;
+                }
+
+                function deleteProfile(profileId) {
+                    var profile = profileById(profileId);
+                    if (!profile) {
+                        return;
+                    }
+
+                    if (sameId(state.draft.defaultProfileId, profileId)) {
+                        state.issues = state.issues.filter(function (issue) {
+                            return issue.field !== 'DefaultProfileId';
+                        });
+                        var row = els.body.querySelector('[data-profile-id="' + profileId + '"]');
+                        if (row) {
+                            var warn = document.createElement('div');
+                            warn.className = 'jfx-field-error';
+                            warn.textContent = 'Default profile: choose another default before deleting this one.';
+                            row.cells[0].appendChild(warn);
+                        }
+
+                        return;
+                    }
+
+                    var question = 'Delete the export profile "' + (profile.name || 'unnamed') + '"?';
+                    var confirmation = window.Dashboard && Dashboard.confirm
+                        ? Dashboard.confirm(question, 'Delete profile')
+                        : Promise.resolve(window.confirm(question));
+
+                    Promise.resolve(confirmation).then(function (confirmed) {
+                        if (!confirmed) {
+                            return;
+                        }
+
+                        state.draft.profiles = state.draft.profiles.filter(function (item) {
+                            return !sameId(item.id, profileId);
+                        });
+                        state.issues = state.issues.filter(function (issue) {
+                            return !sameId(issue.profileId, profileId);
+                        });
+                        if (sameId(state.editingId, profileId)) {
+                            closeEditor();
+                        }
+
+                        render();
+                    });
+                }
+
+                function clientValidate(payload) {
+                    var issues = [];
+                    payload.profiles.forEach(function (profile) {
+                        localIssuesFor(profile, payload.profiles).forEach(function (issue) {
+                            issues.push({ profileId: profile.id, field: issue.field, message: issue.message });
+                        });
+                    });
+
+                    if (payload.maxConcurrentExports < 1 || payload.maxConcurrentExports > MAX_CONCURRENT_LIMIT) {
+                        issues.push({
+                            profileId: null,
+                            field: 'MaxConcurrentExports',
+                            message: 'Max concurrent exports must be between 1 and ' + MAX_CONCURRENT_LIMIT + '.'
+                        });
+                    }
+
+                    if (payload.jobHistoryLimit < 1 || payload.jobHistoryLimit > JOB_HISTORY_LIMIT) {
+                        issues.push({
+                            profileId: null,
+                            field: 'JobHistoryLimit',
+                            message: 'Job history must keep between 1 and ' + JOB_HISTORY_LIMIT + ' finished exports.'
+                        });
+                    }
+
+                    if (payload.defaultProfileId && !payload.profiles.some(function (profile) {
+                        return sameId(profile.id, payload.defaultProfileId);
+                    })) {
+                        issues.push({
+                            profileId: null,
+                            field: 'DefaultProfileId',
+                            message: 'The default profile no longer exists. Choose another default profile or clear it.'
+                        });
+                    }
+
+                    return issues;
+                }
+
+                function payloadForSave() {
+                    var payload = buildPayload();
+                    var max = parseInt(els.maxExports.value, 10);
+                    payload.maxConcurrentExports = isNaN(max) ? state.draft.maxConcurrentExports : max;
+                    var history = parseInt(els.historyLimit.value, 10);
+                    payload.jobHistoryLimit = isNaN(history) ? state.draft.jobHistoryLimit : history;
+                    payload.notifyOnCompletion = els.notifyCompletion.checked;
+                    payload.notifyOnFailure = els.notifyFailure.checked;
+                    return payload;
+                }
+
+                function mergeForSave(config, payload) {
+                    // Start from what the server returned so members added by later
+                    // versions survive a save from an older page.
+                    var toSave = JSON.parse(JSON.stringify(config || {}));
+                    CONFIG_FIELDS.forEach(function (field) {
+                        toSave[serverKey(field.server)] = payload[field.local];
+                    });
+                    toSave[serverKey('Profiles')] = payload.profiles.map(toServerProfile);
+                    return toSave;
+                }
+
+                function showSaveError(message) {
+                    els.errors.hidden = false;
+                    els.errors.innerHTML = '';
+                    var text = document.createElement('strong');
+                    text.textContent = message;
+                    els.errors.appendChild(text);
+                }
+
+                function issuesFromResult(result) {
+                    var issues = pick(result, 'Issues');
+                    if (!issues) {
+                        return [];
+                    }
+
+                    return issues.map(function (issue) {
+                        return {
+                            profileId: normalizeId(pick(issue, 'ProfileId')) || null,
+                            field: pick(issue, 'Field'),
+                            message: pick(issue, 'Message')
+                        };
+                    });
+                }
+
+                function showIssues(issues) {
+                    state.issues = issues;
+                    renderTable();
+                    renderIssues();
+                }
+
+                function persist(payload) {
+                    var toSave = mergeForSave(state.serverRaw, payload);
+                    ApiClient.updatePluginConfiguration(pluginUniqueId, toSave).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                        state.issues = [];
+                        loadConfiguration();
+                    }, function (response) {
+                        // Jellyfin's own configuration endpoint answers a rejected
+                        // save with a fixed "Error processing request." body, so the
+                        // validator's message has to come from our Validate route.
+                        reportSaveFailure(payload, response);
+                    });
+                }
+
+                function reportSaveFailure(payload, response) {
+                    var status = response && response.status ? ' (HTTP ' + response.status + ')' : '';
+                    var fallback = 'Jellyfin rejected the configuration' + status
+                        + ' without saying why. Nothing was saved; the server log names the exact reason.';
+
+                    ApiClient.ajax({
+                        type: 'POST',
+                        url: ApiClient.getUrl(VALIDATE_URL),
+                        data: JSON.stringify(payload),
+                        contentType: 'application/json',
+                        dataType: 'json'
+                    }).then(function (result) {
+                        Dashboard.hideLoadingMsg();
+                        var issues = issuesFromResult(result);
+                        if (pick(result, 'Valid') === false && issues.length) {
+                            showIssues(issues);
+                            showSaveError('The server rejected the configuration' + status + ': ' + issues[0].message);
+                        } else {
+                            showSaveError(fallback);
+                        }
+                    }, function () {
+                        Dashboard.hideLoadingMsg();
+                        showSaveError(fallback);
+                    });
+                }
+
+                function save() {
+                    var payload = payloadForSave();
+                    els.maxExportsError.textContent = '';
+                    els.historyLimitError.textContent = '';
+
+                    var issues = clientValidate(payload);
+                    state.issues = issues;
+                    if (issues.length) {
+                        issues.forEach(function (issue) {
+                            if (issue.field === 'MaxConcurrentExports') {
+                                els.maxExportsError.textContent = issue.message;
+                            } else if (issue.field === 'JobHistoryLimit') {
+                                els.historyLimitError.textContent = issue.message;
+                            }
+                        });
+                        renderTable();
+                        renderIssues();
+                        return;
+                    }
+
+                    Dashboard.showLoadingMsg();
+                    ApiClient.ajax({
+                        type: 'POST',
+                        url: ApiClient.getUrl(VALIDATE_URL),
+                        data: JSON.stringify(payload),
+                        contentType: 'application/json',
+                        dataType: 'json'
+                    }).then(function (result) {
+                        if (pick(result, 'Valid') === false) {
+                            showIssues(issuesFromResult(result));
+                            Dashboard.hideLoadingMsg();
+                            return;
+                        }
+
+                        persist(payload);
+                    }, function () {
+                        // Validation endpoint missing (older build): the server-side
+                        // check in Plugin.UpdateConfiguration still rejects bad paths.
+                        persist(payload);
+                    });
+                }
+
+                function loadConfiguration() {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginUniqueId).then(function (config) {
+                        var rawProfiles = pick(config, 'Profiles') || [];
+                        state.keys = {};
+                        PROFILE_FIELDS.forEach(function (field) {
+                            state.keys[field.server] = detectKey(rawProfiles[0], field.server, field.server);
+                        });
+                        state.keys.Profiles = detectKey(config, 'Profiles', 'Profiles');
+                        CONFIG_FIELDS.forEach(function (field) {
+                            state.keys[field.server] = detectKey(config, field.server, field.server);
+                        });
+
+                        state.serverRaw = config;
+                        state.server = normalizeConfig(config);
+                        state.draft = copyConfig(state.server);
+                        state.issues = [];
+                        els.errors.hidden = true;
+                        els.maxExportsError.textContent = '';
+                        els.editor.hidden = true;
+                        state.editingId = null;
+                        render();
+                        Dashboard.hideLoadingMsg();
+
+                        // Report directories that stopped working after a server-side
+                        // change (moved disk, changed permissions).
+                        state.draft.profiles.forEach(function (profile) {
+                            probeDirectory(profile);
+                        });
+                    }, function () {
+                        Dashboard.hideLoadingMsg();
+                        showSaveError('Could not load the plugin configuration.');
+                    });
+                }
+
+                function init() {
+                    fillSelect(els.format, FORMATS);
+                    fillSelect(els.resolution, RESOLUTIONS);
+                    fillSelect(els.audio, AUDIO);
+
+                    els.addProfile.addEventListener('click', function () {
+                        openEditor(null);
+                    });
+
+                    els.form.addEventListener('submit', applyProfile);
+
+                    els.cancelProfile.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        closeEditor();
+                    });
+
+                    els.directory.addEventListener('change', function () {
+                        if (state.editingId) {
+                            probeDirectory({
+                                id: state.editingId,
+                                outputDirectory: els.directory.value.trim()
+                            });
+                        }
+                    });
+
+                    els.maxExports.addEventListener('change', function () {
+                        var value = parseInt(els.maxExports.value, 10);
+                        if (isNaN(value)) {
+                            value = state.draft.maxConcurrentExports;
+                        }
+
+                        state.draft.maxConcurrentExports = value;
+                        refreshDirty();
+                    });
+
+                    els.historyLimit.addEventListener('change', function () {
+                        var value = parseInt(els.historyLimit.value, 10);
+                        if (isNaN(value)) {
+                            value = state.draft.jobHistoryLimit;
+                        }
+
+                        state.draft.jobHistoryLimit = value;
+                        refreshDirty();
+                    });
+
+                    function openStatus(event) {
+                        event.preventDefault();
+                        Dashboard.navigate('configurationpage?name=' + encodeURIComponent('Export Status'));
+                    }
+
+                    els.openStatus.addEventListener('click', openStatus);
+                    els.openStatusLink.addEventListener('click', openStatus);
+
+                    els.notifyCompletion.addEventListener('change', function () {
+                        state.draft.notifyOnCompletion = els.notifyCompletion.checked;
+                        refreshDirty();
+                    });
+
+                    els.notifyFailure.addEventListener('change', function () {
+                        state.draft.notifyOnFailure = els.notifyFailure.checked;
+                        refreshDirty();
+                    });
+
+                    els.save.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        save();
+                    });
+
+                    els.revert.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        loadConfiguration();
+                    });
+
+                    page.addEventListener('pageshow', function () {
+                        if (!window.ApiClient) {
+                            showSaveError('Open this page from the Jellyfin dashboard.');
+                            return;
+                        }
+
+                        loadConfiguration();
+                    });
+
+                    // The dashboard may have dispatched pageshow before this
+                    // script attached its listener, so load once here as well.
+                    if (window.ApiClient) {
+                        loadConfiguration();
+                    }
+                }
+
+            
+
+                var settingsRoot = document.querySelector('#JellyfinExporterBrowsePage');
+                if (settingsRoot) {
+                    startSettings(settingsRoot);
+                } else {
+                    var settingsObserver = new MutationObserver(function () {
+                        var found = document.querySelector('#JellyfinExporterBrowsePage');
+                        if (found) {
+                            settingsObserver.disconnect();
+                            startSettings(found);
+                        }
+                    });
+                    settingsObserver.observe(document.documentElement, { childList: true, subtree: true });
                 }
             })();
         </script>

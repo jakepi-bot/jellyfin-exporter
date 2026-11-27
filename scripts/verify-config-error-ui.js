@@ -77,7 +77,11 @@ async function gotoPage(page, route) {
     });
 
     await gotoPage(page, '/configurationpage?name=Jellyfin%20Exporter');
-    check('settings page loads', await page.isVisible('#JellyfinExporterConfigPage'));
+    check('settings page loads', await page.isVisible('#JellyfinExporterBrowsePage'));
+
+    // The profile editor lives on the Profiles tab of the merged page.
+    await page.click('#jfx-tab-profiles');
+    check('profiles tab shows the profile editor', await page.isVisible('#jfx-add-profile'));
 
     // Add a profile the page accepts (absolute path) but the server rejects.
     await page.click('#jfx-add-profile');

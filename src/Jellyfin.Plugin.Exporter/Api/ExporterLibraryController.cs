@@ -90,13 +90,21 @@ public class ExporterLibraryController : ControllerBase
     /// <param name="search">Optional search term.</param>
     /// <param name="startIndex">Zero-based offset into the result set.</param>
     /// <param name="limit">Page size, 1-100.</param>
+    /// <param name="parentId">
+    /// Optional parent item id (dashed or undashed Guid) whose children should be
+    /// listed, used by the season picker to load one show's seasons
+    /// (<c>type=Seasons&amp;parentId=&lt;series id&gt;</c>). An unparseable value
+    /// is ignored and the query behaves as if the parameter were absent, which is
+    /// also what happens when it is not sent at all.
+    /// </param>
     /// <returns>One page of library items.</returns>
     [HttpGet("Items")]
     public ActionResult<ExporterLibraryPage> GetItems(
         [FromQuery] string? type,
         [FromQuery] string? search,
         [FromQuery] int? startIndex,
-        [FromQuery] int? limit)
+        [FromQuery] int? limit,
+        [FromQuery] string? parentId)
     {
         if (!TryMapLibraryType(type, out var kind, out var typeError))
         {
@@ -118,6 +126,12 @@ public class ExporterLibraryController : ControllerBase
                 (ItemSortBy.SortName, SortOrder.Ascending)
             }
         };
+
+        var parent = TryParseGuid(parentId);
+        if (parent is not null && parent.Value != Guid.Empty)
+        {
+            query.ParentId = parent.Value;
+        }
 
         if (kind == BaseItemKind.Movie)
         {

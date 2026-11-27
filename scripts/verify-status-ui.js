@@ -38,13 +38,17 @@ async function gotoPage(page, route) {
 
     await login(page);
 
-    // --- Settings page: history setting and the status-page link
+    // --- Settings: history setting and the status-page link
     await gotoPage(page, '/configurationpage?name=Jellyfin%20Exporter');
-    check('settings page loads', await page.isVisible('#JellyfinExporterConfigPage'));
+    check('settings page loads', await page.isVisible('#JellyfinExporterBrowsePage'));
+    check('status page button is on the page header', await page.isVisible('#jfx-open-status'));
+    // The profile editor and global settings live on the Profiles tab of the
+    // merged page (the plugin's single main-menu page).
+    await page.click('#jfx-tab-profiles');
+    check('profiles tab shows the settings form', await page.isVisible('#jfx-save'));
     check('job history setting present', await page.isVisible('#jfx-history-limit'));
     const historyValue = await page.inputValue('#jfx-history-limit');
     check('job history setting shows the saved value', historyValue === EXPECT_LIMIT, 'value=' + historyValue);
-    check('settings page links to the status page', await page.isVisible('#jfx-open-status'));
     await page.screenshot({ path: OUT + '/jfx-settings.png' });
 
     // --- Status page

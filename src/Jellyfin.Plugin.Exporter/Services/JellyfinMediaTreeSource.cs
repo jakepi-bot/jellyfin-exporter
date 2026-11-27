@@ -47,8 +47,11 @@ public sealed class JellyfinMediaTreeSource : IMediaTreeSource
             ParentId = parentId,
             Recursive = recursive,
             IncludeItemTypes = new[] { BaseItemKind.Episode },
-            IsMissing = false,
-            IsUnaired = false
+            // Only "has a file" matters here. IsUnaired must stay unset: on
+            // Jellyfin it excludes every episode without a premiere date (a
+            // library with no remote metadata providers has none), which made
+            // whole seasons report "no episodes with files to export".
+            IsMissing = false
         };
 
         return _libraryManager

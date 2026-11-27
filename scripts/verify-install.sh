@@ -153,11 +153,15 @@ assert plugin["Status"].lower() in ("active", "restart"), plugin["Status"]
 assert plugin["CanUninstall"] is True, "plugin is not uninstallable"
 PY
 
-say "checking configuration page and configuration API"
-PAGE_CODE="$(curl -sS -o "${WORK}/configPage.html" -w '%{http_code}' \
+say "checking the merged configuration page and configuration API"
+# The plugin registers ONE main-menu page hosting both the browse UI and the
+# profile editor: jellyfin-web's findBestConfigurationPage prefers a plugin's
+# first EnableInMainMenu page, so a separate settings page made the plugin
+# card's Settings button land on the browse page with no way to the profiles.
+PAGE_CODE="$(curl -sS -o "${WORK}/page.html" -w '%{http_code}' \
   "${API}/web/ConfigurationPage?name=Jellyfin%20Exporter")"
 test "$PAGE_CODE" = "200"
-grep -q 'JellyfinExporterConfigPage' "${WORK}/configPage.html"
+grep -q 'JellyfinExporterBrowsePage' "${WORK}/page.html"
 curl -fsS "${API}/Plugins/${PLUGIN_GUID}/Configuration" -H "$HDR" >"${WORK}/config.json"
 python3 - "${WORK}/config.json" <<'PY'
 import json, sys
@@ -180,24 +184,58 @@ sleep 3
 curl -fsS "${API}/Plugins/${PLUGIN_GUID}/Configuration" -H "$HDR" |
   python3 -c 'import json,sys; c=json.load(sys.stdin); assert c["MaxConcurrentExports"]==3, c; print("persisted config:", json.dumps(c))'
 
-say "checking the settings page ships the profile editor"
-for marker in 'jfx-profiles-table' 'JellyfinExporter/Profiles/Validate' \
+say "checking the merged page ships the browse UI and the profile editor"
+for marker in 'jfx-panel-export' 'jfx-panel-profiles' 'id="jfx-tab-profiles"' \
+    'JellyfinExporter/Library/Items' 'JellyfinExporter/Library/Export' \
+    'jfx-select-all' 'data-type="TVShows"' 'jfx-season-modal' 'jfx-all-seasons' \
+    'jfx-profiles-table' 'JellyfinExporter/Profiles/Validate' \
     'Movies/{Movie Title} ({Year})' 'Season {NN}'; do
-  if ! grep -qF "$marker" "${WORK}/configPage.html"; then
-    echo "FAIL: settings page is missing ${marker}" >&2
+  if ! grep -qF "$marker" "${WORK}/page.html"; then
+    echo "FAIL: merged page is missing ${marker}" >&2
     exit 1
   fi
 done
+if grep -qF 'data-type="Seasons"' "${WORK}/page.html"; then
+  echo "FAIL: the merged page still carries the old Seasons tab" >&2
+  exit 1
+fi
+echo "merged page carries both panels and the season picker"
 
-say "checking the browse page ships and its API is admin-only"
-curl -fsS "${API}/web/ConfigurationPage?name=Exporter" -H "$HDR" >"${WORK}/exporterPage.html"
-for marker in 'JellyfinExporterBrowsePage' 'JellyfinExporter/Library/Items' \
-    'JellyfinExporter/Library/Export' 'jfx-select-all'; do
-  if ! grep -qF "$marker" "${WORK}/exporterPage.html"; then
-    echo "FAIL: browse page is missing ${marker}" >&2
-    exit 1
-  fi
-done
+say "checking the plugin exposes exactly one main-menu page (the Settings target)"
+OLD_CODE="$(curl -sS -o /dev/null -w '%{http_code}' \
+  "${API}/web/ConfigurationPage?name=Exporter" -H "$HDR")"
+if [ "$OLD_CODE" = "200" ]; then
+  echo "FAIL: the removed 'Exporter' page route still answers 200" >&2
+  exit 1
+fi
+curl -fsS "${API}/web/ConfigurationPages" -H "$HDR" >"${WORK}/pages.json"
+python3 - "${WORK}/pages.json" "$PLUGIN_GUID" <<'PY'
+import json, sys
+
+def norm_guid(value):
+    # Jellyfin reports Guids without dashes; the script passes the dashed form.
+    return "".join(ch for ch in str(value).lower() if ch in "0123456789abcdef")
+
+raw = json.load(open(sys.argv[1]))
+if isinstance(raw, dict):
+    for key in ("Items", "items", "Pages", "pages"):
+        if key in raw:
+            raw = raw[key]
+            break
+assert isinstance(raw, list), type(raw)
+guid = norm_guid(sys.argv[2])
+mine = [p for p in raw if norm_guid(p.get("PluginId", "")) == guid]
+names = sorted(p.get("Name") for p in mine)
+assert names == ["Export Status", "Jellyfin Exporter"], names
+menu = [p for p in mine if p.get("EnableInMainMenu")]
+assert len(menu) == 1, menu
+assert menu[0].get("Name") == "Jellyfin Exporter", menu[0]
+assert menu[0].get("DisplayName") == "Exporter", menu[0]
+assert menu[0].get("MenuIcon") == "file_download", menu[0]
+print("single EnableInMainMenu page:", menu[0].get("Name"), "->", menu[0].get("DisplayName"))
+PY
+
+say "checking the browse API is admin-only"
 CODE="$(curl -sS -o /dev/null -w '%{http_code}' "${API}/JellyfinExporter/Library/Items?type=Movies" -H "$HDR")"
 if [ "$CODE" != "200" ]; then
   echo "FAIL: browse endpoint returned HTTP ${CODE} for an administrator" >&2

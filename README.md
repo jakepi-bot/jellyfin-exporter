@@ -45,10 +45,15 @@ so `POST /JellyfinExporter/Profiles/Validate` is the way to read the reason prog
 
 ## Browse and queue exports
 
-The **Exporter** page (`/web/ConfigurationPage?name=Exporter`, also in the dashboard menu) has three
-tabs: **Movies**, **TV Shows** and **TV Seasons**. Each tab pages through the real library with
-search, poster thumbnails, per-item checkboxes and a select-all-for-page control. Pick a profile
-in the dropdown (only enabled profiles are offered) and press **Export**. The page first asks the
+The **Exporter** page (`/web/ConfigurationPage?name=Jellyfin%20Exporter`, also in the dashboard
+menu — it is the plugin's only main-menu page, so the plugin card's Settings button and the
+left-nav entry open the same page) has two tabs: **Export** and **Profiles**. The Export tab
+browses in two modes: **Movies** (multi-select grid with per-item checkboxes and a
+select-all-for-page control) and **TV Shows**, where clicking a show opens a season picker —
+tick individual seasons or **All seasons**, optionally change the profile, then continue into the
+normal confirmation. **Profiles** holds the profile editor and the global settings. Both modes page
+through the real library with search and poster thumbnails. Pick a profile in the dropdown (only
+enabled profiles are offered) and press **Export**. The page first asks the
 server what the selection would queue, shows a confirmation summary (job count, already-queued
 items, items that vanished), and only then enqueues.
 
@@ -69,7 +74,7 @@ Endpoints, all requiring an administrator:
 | Route | Purpose |
 | --- | --- |
 | `GET /JellyfinExporter/Library/Profiles` | Profile ids and names for the dropdown (no paths) |
-| `GET /JellyfinExporter/Library/Items?type=Movies|Series|Seasons&search=&startIndex=&limit=` | Paged library browse |
+| `GET /JellyfinExporter/Library/Items?type=Movies|Series|Seasons&search=&startIndex=&limit=&parentId=` | Paged library browse; `parentId` narrows the result to one show's seasons |
 | `POST /JellyfinExporter/Library/Plan` `{itemIds[], profileId}` | Dry run: what the selection would queue |
 | `POST /JellyfinExporter/Library/Export` `{itemIds[], profileId}` | Expand and enqueue the jobs |
 
@@ -271,7 +276,8 @@ startup wizard, registers a plugin repository URL, installs the plugin from the 
 restarts the server and asserts that:
 
 - the plugin loads as `Active` at the expected version and can be uninstalled;
-- `/web/ConfigurationPage?name=Jellyfin%20Exporter` serves the embedded settings page;
+- `/web/ConfigurationPage?name=Jellyfin%20Exporter` serves the merged Exporter page (browse plus the
+  profile editor), and only that page of the plugin is flagged for the main menu;
 - the configuration API returns defaults and persists a change across a restart.
 
 ```bash
@@ -339,8 +345,7 @@ src/Jellyfin.Plugin.Exporter/
   Services/ExportNotifications.cs         activity-log notifications + exactly-once listener
   Services/JellyfinMediaTreeSource.cs     ILibraryManager adapter for the browser
   Services/ExporterServiceRegistrator.cs  plugin DI registrations
-  Web/configPage.html                     embedded settings page (profile editor)
-  Web/exporterPage.html                   embedded Exporter page (browse + queue)
+  Web/exporterPage.html                   embedded Exporter page (browse + queue + profile editor)
   meta.json, plugin.xml                   install metadata stamped into the zip
 tests/Jellyfin.Plugin.Exporter.Tests/     xunit tests: XML/JSON round-trip + validation rules
 scripts/package.py                        build the installable zip

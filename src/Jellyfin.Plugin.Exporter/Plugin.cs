@@ -47,21 +47,15 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         return new[]
         {
+            // ONE page for the whole plugin: browse/queue AND the profile
+            // editor. Jellyfin's dashboard picks the Settings destination with
+            // findBestConfigurationPage, which among a plugin's pages prefers
+            // the first one flagged EnableInMainMenu; registering the profile
+            // editor as its own page meant that check returned the browse page
+            // and the settings button could never reach the profiles UI.
             new PluginPageInfo
             {
                 Name = Name,
-                DisplayName = Name,
-                EmbeddedResourcePath = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}.Web.configPage.html",
-                    typeof(Plugin).Namespace)
-            },
-
-            // The browse/queue page. EnableInMainMenu puts "Exporter" in the
-            // dashboard menu instead of hiding it behind the plugin settings.
-            new PluginPageInfo
-            {
-                Name = BrowsePageName,
                 DisplayName = "Exporter",
                 EmbeddedResourcePath = string.Format(
                     CultureInfo.InvariantCulture,
@@ -72,7 +66,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             },
 
             // The status page the export page links to after queueing, and the
-            // per-job progress/history surface.
+            // per-job progress/history surface. Kept out of the main menu so it
+            // cannot compete with the merged page for the Settings link.
             new PluginPageInfo
             {
                 Name = StatusPageName,
@@ -84,12 +79,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             }
         };
     }
-
-    /// <summary>
-    /// Route name of the browse/queue page
-    /// (<c>/web/ConfigurationPage?name=Exporter</c>).
-    /// </summary>
-    public const string BrowsePageName = "Exporter";
 
     /// <summary>
     /// Route name of the export status page
