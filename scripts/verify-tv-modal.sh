@@ -213,6 +213,64 @@ PY
 curl -fsS -o /dev/null -X POST "${API}/Plugins/${PLUGIN_GUID}/Configuration" -H "$HDR" \
   -H 'Content-Type: application/json' -d @"${WORK}/config-with-tv-profile.json"
 
+say "checking the transcoding-settings gate: H265 refused while Jellyfin has HEVC off, allowed once on"
+python3 - "${API}" "$HDR" "${PLUGIN_GUID}" <<'PY'
+import json, sys, urllib.error, urllib.request
+
+api, hdr, guid = sys.argv[1], sys.argv[2], sys.argv[3]
+name, _, value = hdr.partition(": ")
+
+
+def request(method, path, body=None):
+    data = json.dumps(body).encode() if body is not None else None
+    headers = {name: value, "Content-Type": "application/json"}
+    req = urllib.request.Request(api + path, data=data, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            return response.status, response.read().decode()
+    except urllib.error.HTTPError as error:
+        return error.code, error.read().decode()
+
+
+def plan(profile_id, item_id):
+    return request("POST", "/JellyfinExporter/Library/Plan",
+                   {"itemIds": [item_id], "profileId": profile_id})
+
+
+status, body = request("GET", "/System/Configuration/encoding")
+encoding = json.loads(body)
+original = (encoding.get("AllowHevcEncoding"), encoding.get("AllowAv1Encoding"))
+
+config = json.loads(request("GET", f"/Plugins/{guid}/Configuration")[1])
+hevc_profile = next((p for p in config.get("Profiles") or [] if p.get("Format") == "H265"), None)
+assert hevc_profile, "no H265 profile to test the gate with"
+
+seasons = json.loads(request("GET", "/JellyfinExporter/Library/Items?type=Seasons&limit=1")[1])
+season = (seasons.get("Items") or [None])[0]
+assert season, "the library has no season to plan against"
+
+# Stock Jellyfin ships AllowHevcEncoding=false: the profile must be refused
+# with an operator-facing message instead of failing inside FFmpeg later.
+encoding["AllowHevcEncoding"] = False
+assert request("POST", "/System/Configuration/encoding", encoding)[0] == 204
+status, body = plan(hevc_profile["Id"], season["Id"])
+assert status == 400, f"expected 400 for an H265 profile while HEVC is off, got {status} {body[:200]}"
+assert "HEVC" in body or "H265" in body, body
+print(f"PASS H265 profile refused while Jellyfin has HEVC off :: {json.loads(body).get('Message', '')[:120]}")
+
+# Restore what the operator configured (Jake's server allows both), then the
+# same profile must plan normally.
+encoding["AllowHevcEncoding"], encoding["AllowAv1Encoding"] = True, True
+assert request("POST", "/System/Configuration/encoding", encoding)[0] == 204
+status, body = plan(hevc_profile["Id"], season["Id"])
+assert status == 200, f"expected the H265 plan to succeed once HEVC is on, got {status} {body[:200]}"
+print(f"PASS H265 profile plans once HEVC is enabled :: {json.loads(body)['JobCount']} job(s)")
+
+# Left ON for the browser phase below, like a server that offers HEVC/AV1
+# exports (stock defaults would block the 2160p H265 profile the modal uses).
+print(f"container encoding settings left with HEVC/AV1 enabled (were {original})")
+PY
+
 say "running the season-picker browser checks"
 CHROME_BIN="${CHROME:-}"
 if [ -z "$CHROME_BIN" ]; then
